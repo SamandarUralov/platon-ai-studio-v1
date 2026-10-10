@@ -1,0 +1,19 @@
+{
+  "name": "@platon/validators",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "vue-tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@platon/definition": "workspace:*",
+    "vue": "^3.5.43"
+  },
+  "devDependencies": {
+    "@platon/mocks": "workspace:^"
+  }
+}

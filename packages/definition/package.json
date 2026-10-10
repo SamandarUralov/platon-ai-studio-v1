@@ -1,0 +1,25 @@
+{
+  "name": "@platon/definition",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./validate": "./src/validate.ts",
+    "./schema": "./schema/app-definition.schema.json"
+  },
+  "scripts": {
+    "typecheck": "vue-tsc --noEmit -p tsconfig.json",
+    "gen:types": "node scripts/gen-types.mjs"
+  },
+  "dependencies": {
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "fast-json-patch": "^3.1.1",
+    "nanoid": "^6.0.2"
+  },
+  "devDependencies": {
+    "lucide-vue-next": "^1.0.0",
+    "prettier": "^3.9.9"
+  }
+}

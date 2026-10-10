@@ -1,0 +1,273 @@
+{
+  "newApp": "New app",
+  "allApps": "All apps",
+  "preview": "Preview",
+  "startOver": "Start over",
+  "stages": { "describe": "Describe", "questions": "Questions", "review": "Review", "create": "Create" },
+  "stepper": "Progress",
+  "intro": {
+    "title": "What should your new app do?",
+    "lead": "Describe it and add any documents. Platon reads everything, asks a few questions, then sets the project up.",
+    "placeholder": "e.g. An app for field technicians to manage work orders. Dispatchers assign jobs, customers track their own.",
+    "describe": "Describe your app",
+    "addFiles": "Add files",
+    "dropHint": "or drop DOCX, PDF, XLSX, images",
+    "dropHere": "Drop files to attach",
+    "remove": "Remove {name}",
+    "continue": "Continue",
+    "orIdea": "Or start from an idea"
+  },
+  "examples": {
+    "field": {
+      "label": "Field service",
+      "text": "An app for our field technicians to manage work orders — today’s jobs, hours, parts and photos. Dispatchers assign jobs, customers track their own. Must work on phones with bad signal and send SMS."
+    },
+    "purchase": {
+      "label": "Purchase approvals",
+      "text": "Employees request purchases, managers approve within budget, finance pays."
+    },
+    "onboarding": {
+      "label": "Client onboarding",
+      "text": "A portal where new clients upload documents and track onboarding steps."
+    },
+    "inspections": {
+      "label": "Inspections",
+      "text": "Inspectors run safety checklists on tablets and flag issues for follow-up."
+    }
+  },
+  "feed": {
+    "docsOnly": "Here are our documents.",
+    "reading": "Reading your documents…",
+    "readN": "I read {n} document. | I read {n} documents.",
+    "fileReading": "Reading…",
+    "briefIntro": "Here’s what I understood from your message and documents.",
+    "purpose": "Purpose",
+    "requirements": "Requirements",
+    "inScope": "{on} of {total} in scope",
+    "questionsIntro": "Great. {n} quick questions — most are pre-filled, so you can mostly press Next.",
+    "changeAnswer": "Change answer",
+    "summaryIntro": "Here’s the project I’ll create.",
+    "building": "Creating your project…",
+    "done": "Done. Your project is ready.",
+    "thinking": "Platon is thinking"
+  },
+  "summary": {
+    "name": "Project name",
+    "pages": "Pages",
+    "tables": "Tables",
+    "roles": "Roles",
+    "languages": "Languages",
+    "edit": "Edit {label}"
+  },
+  "dock": {
+    "summarising": "Summarising what I found…",
+    "next": "Next",
+    "briefTitle": "Does this capture it?",
+    "briefHint": "Uncheck anything out of scope above, or add what’s missing.",
+    "addReq": "Add a requirement…",
+    "add": "Add",
+    "reqSummary": "{n} requirement in scope | {n} requirements in scope",
+    "looksRight": "Looks right, continue",
+    "questionOf": "Question {n} of {total}",
+    "pickAny": "· pick any",
+    "ownWords": "Or answer in your own words…",
+    "back": "Back",
+    "skip": "Skip · let Platon decide",
+    "toContinue": "to continue",
+    "review": "Review",
+    "save": "Save",
+    "readyTitle": "Ready to create {name}",
+    "readyHint": "Click any row above to change it. Everything stays editable in Studio.",
+    "create": "Create project",
+    "creating": "Creating {name}…",
+    "failed": "Couldn’t create {name}",
+    "retry": "Try again",
+    "readyDone": "{name} is ready",
+    "doneHint": "Running in Development · invites sent",
+    "open": "Open in Studio"
+  },
+  "ack": {
+    "text": "Got it.",
+    "skipped": "Skipped — Platon will use a sensible default.",
+    "signin": "{n} sign-in method will be set up. | {n} sign-in methods will be set up.",
+    "modules": "{n} module will be enabled. | {n} modules will be enabled.",
+    "theme": "{color} in {mode} mode.",
+    "langs": "{lang} is the default language.",
+    "team": "They’ll get an invite when the project is created.",
+    "data": "Saved."
+  },
+  "q": {
+    "signin": {
+      "label": "Sign-in",
+      "text": "How should people sign in?",
+      "hint": "Pick any. Each method becomes a login option on the sign-in page."
+    },
+    "modules": {
+      "label": "Modules",
+      "text": "Which modules should Platon turn on?",
+      "hint": "Pre-selected from your requirements. You can enable or remove modules later in Project settings."
+    },
+    "theme": {
+      "label": "Look",
+      "text": "Pick a look.",
+      "hint": "The preview on the right updates as you choose."
+    },
+    "langs": {
+      "label": "Languages",
+      "text": "Which languages do your users need?",
+      "hint": "The first one you pick is the default. Platon drafts translations for the rest."
+    },
+    "team": {
+      "label": "Team",
+      "text": "Who should build this with you?",
+      "hint": "Search everyone in {org}. Roles work like GitLab: Owner, Maintainer, Developer, Reporter, Planner, Guest."
+    },
+    "data": {
+      "label": "Data",
+      "text": "Where should the data live?",
+      "hint": "Jobs, parts and time entries are relational, so PostgreSQL fits best."
+    }
+  },
+  "group": {
+    "color": "Brand color",
+    "mode": "Mode",
+    "radius": "Corners",
+    "engine": "Database",
+    "storage": "Files & photos",
+    "sample": "Test data"
+  },
+  "opt": {
+    "signin": {
+      "password": "Email & password",
+      "eimzo": "E-IMZO",
+      "ldap": "LDAP",
+      "oneid": "OneID",
+      "rsid": "RS_ID",
+      "keycloak": "Keycloak",
+      "google": "Google"
+    },
+    "modules": {
+      "workflows": "Workflows",
+      "reports": "Reports & dashboards",
+      "notifications": "Notifications",
+      "print_forms": "Print forms",
+      "file_storage": "File storage",
+      "audit_log": "Audit log",
+      "scheduler": "Scheduler",
+      "integrations": "Integrations API",
+      "comments": "Comments & activity",
+      "calendar": "Calendar"
+    },
+    "color": {
+      "indigo": "Indigo",
+      "graphite": "Graphite",
+      "forest": "Forest",
+      "ember": "Ember",
+      "ocean": "Ocean",
+      "plum": "Plum"
+    },
+    "mode": { "light": "Light", "dark": "Dark", "system": "System" },
+    "radius": { "sharp": "Sharp", "soft": "Soft", "round": "Round" },
+    "langs": {
+      "en": "English",
+      "uz": "Uzbek",
+      "ru": "Russian",
+      "kk": "Kazakh",
+      "tr": "Turkish",
+      "de": "German",
+      "ar": "Arabic"
+    },
+    "storage": { "new": "New MinIO bucket", "shared": "Use shared storage" },
+    "sample": { "sample": "Generate sample data", "empty": "Start empty" }
+  },
+  "optDesc": {
+    "modules": {
+      "workflows": "Approvals, state machines, BPMN",
+      "reports": "Charts, KPIs, exports",
+      "notifications": "In-app, email and push alerts",
+      "print_forms": "PDF and DOCX templates",
+      "file_storage": "Uploads, photos, attachments",
+      "audit_log": "Who changed what and when",
+      "scheduler": "Cron and background jobs",
+      "integrations": "REST/SOAP connectors and webhooks",
+      "comments": "Threads and activity feed",
+      "calendar": "Events, schedules, bookings"
+    }
+  },
+  "bestFit": "Best fit",
+  "fmt": {
+    "theme": "{color} · {mode} · {radius} corners",
+    "default": "{value} (default)",
+    "member": "{name} ({role})"
+  },
+  "team": {
+    "search": "Search {n} people by name or email",
+    "searchLabel": "Search people to add",
+    "toggle": "Show people",
+    "add": "Add",
+    "none": "No one matches “{q}”.",
+    "showing": "Showing {shown} of {total} · keep typing to narrow down",
+    "count": "{n} person · ↑↓ to move, Enter to add | {n} people · ↑↓ to move, Enter to add",
+    "loading": "Searching…",
+    "added": "Added · {n}",
+    "ownerYou": "Owner · you",
+    "role": "Role for {name}",
+    "remove": "Remove {name}"
+  },
+  "roles": {
+    "owner": "Owner",
+    "maintainer": "Maintainer",
+    "developer": "Developer",
+    "reporter": "Reporter",
+    "planner": "Planner",
+    "guest": "Guest"
+  },
+  "roleDesc": {
+    "owner": "Full control, incl. deleting the project",
+    "maintainer": "Manage members, releases and settings",
+    "developer": "Build pages, data, workflows",
+    "reporter": "View everything, edit nothing",
+    "planner": "Plan and comment, no build access",
+    "guest": "View pages only"
+  },
+  "tasks": {
+    "requirements": "Reading requirements",
+    "model": "Designing data model",
+    "pages": "Creating pages",
+    "roles": "Roles & permissions",
+    "signin": "Sign-in methods",
+    "modules": "Enabling modules",
+    "theme": "Applying theme",
+    "langs": "Translating labels",
+    "data": "Database & storage",
+    "invite": "Inviting team"
+  },
+  "taskDetail": {
+    "inScope": "{n} in scope",
+    "tables": "{n} tables",
+    "pages": "{n} pages",
+    "invites": "{n} invite | {n} invites"
+  },
+  "panel": {
+    "title": "Live preview",
+    "answered": "{n} of {total} answered",
+    "created": "Created",
+    "brief": "Brief",
+    "reading": "Reading…",
+    "reqs": "{n} requirement | {n} requirements",
+    "answering": "Answering now",
+    "todayJobs": "Today’s jobs",
+    "job1": "HVAC inspection · 4B",
+    "job1Meta": "09:30 · Riverside Plaza",
+    "job2": "Replace filter · Lobby",
+    "job2Meta": "13:00 · North Tower",
+    "startNext": "Start next job",
+    "nav": {
+      "dashboard": "Dashboard",
+      "jobs": "Jobs",
+      "schedule": "Schedule",
+      "customers": "Customers",
+      "reports": "Reports"
+    }
+  }
+}

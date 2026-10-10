@@ -1,0 +1,78 @@
+{
+  "app": { "name": "Platon AI Studio" },
+  "nav": {
+    "interface": "Interface",
+    "logic": "Logic",
+    "data": "Data",
+    "storage": "Storage",
+    "preview": "Preview",
+    "releases": "Releases",
+    "advanced": "Advanced",
+    "release": "Release",
+    "console": "Console"
+  },
+  "sync": {
+    "idle": "Development · saved",
+    "saving": "Development · saving…",
+    "saved": "Development · saved",
+    "error": "Development · not saved",
+    "conflict": "Development · syncing…"
+  },
+  "profile": {
+    "projectSettings": "Project settings",
+    "admin": "Admin panel",
+    "allApps": "All apps",
+    "shortcuts": "Keyboard shortcuts",
+    "help": "Help & docs",
+    "theme": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System",
+    "language": "Studio language",
+    "logout": "Log out"
+  },
+  "switcher": {
+    "find": "Find an app",
+    "apps": "{org} · apps",
+    "none": "No apps match.",
+    "all": "All apps",
+    "new": "New app"
+  },
+  "palette": {
+    "placeholder": "Jump to a page, function, table…",
+    "pinned": "Pinned",
+    "recent": "Recent",
+    "everything": "Everything",
+    "empty": "Nothing matches"
+  },
+  "common": {
+    "save": "Save",
+    "discard": "Discard",
+    "cancel": "Cancel",
+    "create": "Create",
+    "delete": "Delete",
+    "close": "Close",
+    "search": "Search",
+    "unsaved": "Unsaved changes",
+    "loading": "Loading…",
+    "retry": "Try again",
+    "copy": "Copy",
+    "copied": "Copied",
+    "open": "Open",
+    "edit": "Edit",
+    "add": "Add",
+    "rename": "Rename",
+    "duplicate": "Duplicate",
+    "none": "None"
+  },
+  "home": {
+    "eyebrow": "Describe it. Then shape it visually.",
+    "title": "What should your team’s next app do?",
+    "lead": "Platon drafts the pages, database, workflows and access rules. Refine everything in visual editors — or keep talking to the AI. Both edit the same app.",
+    "placeholder": "e.g. An app for our field technicians to manage work orders, log hours and parts. Dispatchers assign jobs; customers see only their own jobs.",
+    "attach": "Attach a spec",
+    "draft": "Draft my app",
+    "yourApps": "Your apps",
+    "duplicate": "Duplicate app"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "title": "App definition",
+  "sub": "Read-only · updates live",
+  "search": "Search pages, functions, tables…",
+  "noMatch": "Nothing matches",
+  "noMatchHint": "Try a page, function, table or a JSON pointer like /data/tables.",
+  "path": "Definition path",
+  "copyPointer": "Copy JSON pointer",
+  "pointerCopied": "Copied {p}",
+  "copyJson": "Copy JSON",
+  "copied": "Copied",
+  "copyFailed": "Couldn’t copy to the clipboard",
+  "openVisual": "Open in {layer}",
+  "banner": "Advanced view of the same definition the visual editors and Studio AI change. It updates live and can’t be edited here. Records, files and run history are never part of it.",
+  "missing": "This item no longer exists",
+  "missingHint": "It was renamed or deleted since you opened it.",
+  "backToPages": "Back to pages",
+  "truncated": "Showing the first {n} lines. Select a smaller item in the tree to see all of it.",
+  "clickToCopy": "click to copy pointer"
+}

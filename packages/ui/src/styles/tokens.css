@@ -1,0 +1,151 @@
+/*
+ * Platon Studio design tokens.
+ * Light values come from the v4 mockups. Dark values are hand-tuned counterparts,
+ * replacing the mockup's `invert()` filter.
+ */
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+
+  /* surfaces */
+  --p-bg: #f5f5f8;
+  --p-bg-home: #fafafc;
+  --p-surface: #ffffff;
+  --p-subtle: #f2f2f6;
+  --p-subtle-2: #f7f7fa;
+  --p-hover: #f5f5f8;
+  --p-overlay: rgba(23, 24, 42, 0.32);
+
+  /* text */
+  --p-fg: #17182a;
+  --p-fg-2: #4a4c5e;
+  --p-muted: #6b6d80;
+  --p-faint: #8a8c9c;
+  --p-faint-2: #9a9cab;
+  --p-on-accent: #ffffff;
+
+  /* lines */
+  --p-line: #e1e1ea;
+  --p-line-2: #e8e8ef;
+  --p-line-soft: #ececf2;
+  --p-line-faint: #efeff4;
+
+  /* brand */
+  --p-primary: #4f5bea;
+  --p-primary-hover: #4350e0;
+  --p-primary-strong: #3f4bd8;
+  --p-primary-tint: #eef0ff;
+  --p-primary-soft: #f4f5ff;
+  --p-primary-ring: #c7ccff;
+
+  /* inverse ("dark" buttons, logo tile) */
+  --p-ink: #17182a;
+  --p-ink-hover: #2a2c3f;
+  --p-on-ink: #ffffff;
+
+  /* status */
+  --p-ok: #1c7a45;
+  --p-ok-bg: #e5f6ec;
+  --p-ok-dot: #2fb36b;
+  --p-warn: #9a5b00;
+  --p-warn-bg: #fff3df;
+  --p-warn-dot: #d48a00;
+  --p-danger: #b42318;
+  --p-danger-bg: #ffe9e7;
+  --p-danger-dot: #d64545;
+  --p-purple: #6b3fc9;
+  --p-purple-bg: #f3ecff;
+  --p-teal: #0e7c66;
+  --p-teal-bg: #e3f5ef;
+  --p-info: #1f6f99;
+  --p-info-bg: #dff1ff;
+  --p-ai: #c0267a;
+  --p-ai-bg: #fdeaf4;
+
+  /* code / console surfaces (dark in both themes) */
+  --p-code-bg: #15161f;
+  --p-code-bg-2: #1b1c2b;
+  --p-code-line: #22243a;
+  --p-code-sel: #2a2c44;
+  --p-code-fg: #e3e5f5;
+  --p-code-muted: #8a8cab;
+
+  /* elevation */
+  --p-shadow-xs: 0 1px 2px rgba(20, 20, 40, 0.06);
+  --p-shadow-seg: 0 1px 2px rgba(20, 20, 40, 0.1);
+  --p-shadow-card: 0 8px 24px rgba(20, 20, 40, 0.08);
+  --p-shadow-pop: 0 18px 44px rgba(20, 20, 40, 0.18);
+  --p-shadow-modal: 0 24px 64px rgba(20, 20, 40, 0.25);
+  --p-focus-ring: 0 0 0 3px var(--p-primary-tint);
+
+  /* canvas */
+  --p-canvas: #ececf2;
+  --p-canvas-dot: #d6d6e0;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --p-bg: #111219;
+  --p-bg-home: #0f1017;
+  --p-surface: #181922;
+  --p-subtle: #20212c;
+  --p-subtle-2: #1c1d27;
+  --p-hover: #23242f;
+  --p-overlay: rgba(0, 0, 0, 0.55);
+
+  --p-fg: #ececf3;
+  --p-fg-2: #c4c5d4;
+  --p-muted: #9a9cb0;
+  --p-faint: #7c7e92;
+  --p-faint-2: #6c6e82;
+  --p-on-accent: #ffffff;
+
+  --p-line: #2e2f3c;
+  --p-line-2: #2a2b37;
+  --p-line-soft: #262733;
+  --p-line-faint: #22232e;
+
+  --p-primary: #6672ff;
+  --p-primary-hover: #7a85ff;
+  --p-primary-strong: #9aa3ff;
+  --p-primary-tint: #23264a;
+  --p-primary-soft: #1d2040;
+  --p-primary-ring: #3d4485;
+
+  --p-ink: #ececf3;
+  --p-ink-hover: #ffffff;
+  --p-on-ink: #15161f;
+
+  --p-ok: #5fd394;
+  --p-ok-bg: #16301f;
+  --p-ok-dot: #3cc47a;
+  --p-warn: #f2b45a;
+  --p-warn-bg: #352812;
+  --p-warn-dot: #e09b2a;
+  --p-danger: #ff8a7f;
+  --p-danger-bg: #3a1a18;
+  --p-danger-dot: #e35d5d;
+  --p-purple: #b89aff;
+  --p-purple-bg: #2a2140;
+  --p-teal: #4fd1b4;
+  --p-teal-bg: #12302a;
+  --p-info: #7cc3ef;
+  --p-info-bg: #152a3a;
+  --p-ai: #ff7fbf;
+  --p-ai-bg: #3a1a2c;
+
+  --p-code-bg: #0d0e14;
+  --p-code-bg-2: #13141c;
+  --p-code-line: #1d1e2b;
+  --p-code-sel: #2a2c44;
+
+  --p-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --p-shadow-seg: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --p-shadow-card: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --p-shadow-pop: 0 18px 44px rgba(0, 0, 0, 0.55);
+  --p-shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.6);
+
+  --p-canvas: #0c0d13;
+  --p-canvas-dot: #24252f;
+}

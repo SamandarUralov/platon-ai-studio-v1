@@ -1,0 +1,19 @@
+{
+  "as": "Preview as",
+  "language": "App language",
+  "edit": "Edit this page",
+  "console": "Console",
+  "restart": "Restart",
+  "restartHint": "Reload the page and run its code again",
+  "summary": "sees {pages} of {total} pages",
+  "records": "{n} work orders in Development",
+  "noAccess": "{role} can’t open this page",
+  "noAccessHint": "Pick another page in the menu or another role above.",
+  "rule": {
+    "readOnly": "Page: view only",
+    "cant": "Page: can’t {actions}",
+    "hidden": "“{block}” hidden",
+    "filtered": "“{block}” only where {field} = {value}",
+    "when": "“{block}” only when {field} = {value}"
+  }
+}

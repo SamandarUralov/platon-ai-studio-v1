@@ -1,0 +1,39 @@
+{
+  "nav": {
+    "interface": "Interfeys",
+    "logic": "Mantiq",
+    "data": "Maʼlumotlar",
+    "storage": "Saqlash",
+    "preview": "Koʻrish",
+    "releases": "Relizlar",
+    "advanced": "Kengaytirilgan",
+    "release": "Reliz",
+    "console": "Konsol"
+  },
+  "profile": {
+    "projectSettings": "Loyiha sozlamalari",
+    "admin": "Admin panel",
+    "allApps": "Barcha ilovalar",
+    "shortcuts": "Tezkor tugmalar",
+    "help": "Yordam",
+    "theme": "Mavzu",
+    "light": "Yorugʻ",
+    "dark": "Qorongʻi",
+    "system": "Tizim",
+    "language": "Studio tili",
+    "logout": "Chiqish"
+  },
+  "common": {
+    "save": "Saqlash",
+    "discard": "Bekor qilish",
+    "cancel": "Bekor",
+    "create": "Yaratish",
+    "delete": "Oʻchirish",
+    "close": "Yopish",
+    "search": "Qidirish",
+    "unsaved": "Saqlanmagan oʻzgarishlar",
+    "loading": "Yuklanmoqda…",
+    "retry": "Qayta urinish"
+  },
+  "home": { "yourApps": "Ilovalaringiz", "draft": "Ilovani yarat" }
+}

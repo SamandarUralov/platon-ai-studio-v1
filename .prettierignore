@@ -1,0 +1,5 @@
+dist
+coverage
+pnpm-lock.yaml
+packages/definition/src/generated
+mocks/public

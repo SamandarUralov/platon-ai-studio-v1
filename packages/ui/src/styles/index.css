@@ -1,0 +1,165 @@
+/*
+ * Import after `@import 'tailwindcss'` in the app stylesheet.
+ * Maps design tokens onto Tailwind theme names (bg-surface, text-muted, border-line, ...).
+ */
+@import './tokens.css';
+
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+@theme inline {
+  --font-sans: 'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-bg: var(--p-bg);
+  --color-bg-home: var(--p-bg-home);
+  --color-surface: var(--p-surface);
+  --color-subtle: var(--p-subtle);
+  --color-subtle-2: var(--p-subtle-2);
+  --color-hover: var(--p-hover);
+  --color-overlay: var(--p-overlay);
+
+  --color-fg: var(--p-fg);
+  --color-fg-2: var(--p-fg-2);
+  --color-muted: var(--p-muted);
+  --color-faint: var(--p-faint);
+  --color-faint-2: var(--p-faint-2);
+  --color-on-accent: var(--p-on-accent);
+
+  --color-line: var(--p-line);
+  --color-line-2: var(--p-line-2);
+  --color-line-soft: var(--p-line-soft);
+  --color-line-faint: var(--p-line-faint);
+
+  --color-primary: var(--p-primary);
+  --color-primary-hover: var(--p-primary-hover);
+  --color-primary-strong: var(--p-primary-strong);
+  --color-primary-tint: var(--p-primary-tint);
+  --color-primary-soft: var(--p-primary-soft);
+  --color-primary-ring: var(--p-primary-ring);
+
+  --color-ink: var(--p-ink);
+  --color-ink-hover: var(--p-ink-hover);
+  --color-on-ink: var(--p-on-ink);
+
+  --color-ok: var(--p-ok);
+  --color-ok-bg: var(--p-ok-bg);
+  --color-ok-dot: var(--p-ok-dot);
+  --color-warn: var(--p-warn);
+  --color-warn-bg: var(--p-warn-bg);
+  --color-warn-dot: var(--p-warn-dot);
+  --color-danger: var(--p-danger);
+  --color-danger-bg: var(--p-danger-bg);
+  --color-danger-dot: var(--p-danger-dot);
+  --color-purple: var(--p-purple);
+  --color-purple-bg: var(--p-purple-bg);
+  --color-teal: var(--p-teal);
+  --color-teal-bg: var(--p-teal-bg);
+  --color-info: var(--p-info);
+  --color-info-bg: var(--p-info-bg);
+  --color-ai: var(--p-ai);
+  --color-ai-bg: var(--p-ai-bg);
+
+  --color-code-bg: var(--p-code-bg);
+  --color-code-bg-2: var(--p-code-bg-2);
+  --color-code-line: var(--p-code-line);
+  --color-code-sel: var(--p-code-sel);
+  --color-code-fg: var(--p-code-fg);
+  --color-code-muted: var(--p-code-muted);
+
+  --color-canvas: var(--p-canvas);
+  --color-canvas-dot: var(--p-canvas-dot);
+
+  --shadow-xs: var(--p-shadow-xs);
+  --shadow-seg: var(--p-shadow-seg);
+  --shadow-card: var(--p-shadow-card);
+  --shadow-pop: var(--p-shadow-pop);
+  --shadow-modal: var(--p-shadow-modal);
+  --shadow-focus: var(--p-focus-ring);
+
+  --text-2xs: 11px;
+  --text-xs: 11.5px;
+  --text-sm: 12.5px;
+  --text-base: 13px;
+  --text-md: 13.5px;
+  --text-lg: 14px;
+  --text-xl: 15px;
+
+  --animate-rise: rise 0.22s ease-out both;
+  --animate-dot: pdot 1.2s infinite ease-in-out;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pdot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+@layer base {
+  html,
+  body,
+  #app {
+    height: 100%;
+  }
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    color: var(--p-fg);
+    background: var(--p-bg);
+    -webkit-font-smoothing: antialiased;
+  }
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+    color: inherit;
+  }
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 2px solid var(--p-primary);
+    outline-offset: 1px;
+  }
+  ::selection {
+    background: var(--p-primary-tint);
+  }
+}
+
+@layer utilities {
+  .scroll-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--p-line) transparent;
+  }
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--p-faint-2);
+  }
+  .bg-dots {
+    background-color: var(--p-canvas);
+    background-image: radial-gradient(var(--p-canvas-dot) 1px, transparent 1px);
+    background-size: 16px 16px;
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://platon.app/schema/change.json",
+  "title": "ChangeDocuments",
+  "description": "Changes (JSON Patch RFC 6902 ops + metadata) and releases (requirements §5).",
+  "type": "object",
+  "properties": {
+    "change": { "$ref": "#/$defs/Change" },
+    "release": { "$ref": "#/$defs/Release" }
+  },
+  "$defs": {
+    "ChangeArea": {
+      "type": "string",
+      "enum": ["Pages", "Logic", "Database", "Storage", "Settings", "Permissions", "Workflow", "Components"]
+    },
+    "PatchOp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["op", "path"],
+      "properties": {
+        "op": { "type": "string", "enum": ["add", "remove", "replace", "move", "copy", "test"] },
+        "path": { "type": "string" },
+        "from": { "type": "string" },
+        "value": {}
+      }
+    },
+    "Change": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "key", "area", "author", "text", "ops", "baseVersion", "createdAt"],
+      "properties": {
+        "id": { "type": "string" },
+        "key": {
+          "type": "string",
+          "description": "Upsert key, e.g. api.post_work_orders.access.type. A later edit with the same key replaces the unreleased entry."
+        },
+        "area": { "$ref": "#/$defs/ChangeArea" },
+        "author": { "type": "string" },
+        "authorKind": { "type": "string", "enum": ["human", "ai"] },
+        "text": { "type": "string", "description": "Plain-language summary shown in Releases." },
+        "machinePath": {
+          "type": "string",
+          "description": "Readable path such as ~ logic.apis.post_work_orders.access"
+        },
+        "ops": { "type": "array", "items": { "$ref": "#/$defs/PatchOp" } },
+        "baseVersion": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "releaseId": { "type": "string" }
+      }
+    },
+    "Deployment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["env", "status"],
+      "properties": {
+        "env": { "type": "string", "enum": ["development", "staging", "production"] },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "awaiting_approval", "running", "succeeded", "failed", "rolled_back"]
+        },
+        "at": { "type": "string", "format": "date-time" },
+        "by": { "type": "string" }
+      }
+    },
+    "Release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "fromVersion",
+        "toVersion",
+        "changes",
+        "migrations",
+        "deployments",
+        "createdAt",
+        "createdBy"
+      ],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "note": { "type": "string" },
+        "fromVersion": { "type": "integer" },
+        "toVersion": { "type": "integer" },
+        "changes": { "type": "array", "items": { "type": "string" } },
+        "migrations": { "type": "array", "items": { "type": "string" } },
+        "deployments": { "type": "array", "items": { "$ref": "#/$defs/Deployment" } },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "createdBy": { "type": "string" }
+      }
+    }
+  }
+}

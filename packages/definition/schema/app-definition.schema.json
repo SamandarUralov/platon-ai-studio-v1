@@ -1,0 +1,1401 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://platon.app/schema/app-definition.json",
+  "title": "AppDefinition",
+  "description": "One versioned document describing a whole Platon app (requirements \u00a75). Ids are stable snake_case; references use ids, never names.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name",
+    "version",
+    "settings",
+    "roles",
+    "interface",
+    "data",
+    "logic",
+    "storage",
+    "workflows",
+    "translations",
+    "components"
+  ],
+  "properties": {
+    "id": {
+      "$ref": "#/$defs/Id"
+    },
+    "name": {
+      "type": "string"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "settings": {
+      "$ref": "#/$defs/AppSettings"
+    },
+    "roles": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Role"
+      }
+    },
+    "interface": {
+      "$ref": "#/$defs/InterfaceLayer"
+    },
+    "data": {
+      "$ref": "#/$defs/DataLayer"
+    },
+    "logic": {
+      "$ref": "#/$defs/LogicLayer"
+    },
+    "storage": {
+      "$ref": "#/$defs/StorageLayer"
+    },
+    "workflows": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Workflow"
+      }
+    },
+    "translations": {
+      "type": "object",
+      "description": "language code \u2192 translation key \u2192 text",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "string"
+        }
+      }
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/CustomComponent"
+      }
+    }
+  },
+  "$defs": {
+    "Id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "SecretRef": {
+      "type": "string",
+      "pattern": "^secret://",
+      "description": "Secrets are only stored as secret:// references."
+    },
+    "EnvName": {
+      "type": "string",
+      "enum": ["development", "staging", "production"]
+    },
+    "EnvSecrets": {
+      "type": "object",
+      "properties": {
+        "development": {
+          "$ref": "#/$defs/SecretRef"
+        },
+        "staging": {
+          "$ref": "#/$defs/SecretRef"
+        },
+        "production": {
+          "$ref": "#/$defs/SecretRef"
+        }
+      },
+      "additionalProperties": false
+    },
+    "AppSettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["defaultLanguage", "timezone", "languages"],
+      "properties": {
+        "slug": {
+          "type": "string"
+        },
+        "defaultLanguage": {
+          "type": "string"
+        },
+        "timezone": {
+          "type": "string"
+        },
+        "languages": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "theme": {
+          "$ref": "#/$defs/AppTheme"
+        },
+        "signIn": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["password", "eimzo", "ldap", "oneid", "rsid", "keycloak", "google"]
+          }
+        },
+        "modules": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "AppTheme": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["color", "mode", "radius"],
+      "properties": {
+        "color": {
+          "type": "string"
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["light", "dark", "system"]
+        },
+        "radius": {
+          "type": "string",
+          "enum": ["sharp", "soft", "round"]
+        }
+      }
+    },
+    "Role": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "permissions"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "permissions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "InterfaceLayer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["navigation", "pages"],
+      "properties": {
+        "navigation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["sidebar", "topbar"]
+            }
+          }
+        },
+        "pages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Page"
+          }
+        }
+      }
+    },
+    "PagePermission": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["view", "create", "edit", "delete"],
+      "properties": {
+        "view": {
+          "type": "boolean"
+        },
+        "create": {
+          "type": "boolean"
+        },
+        "edit": {
+          "type": "boolean"
+        },
+        "delete": {
+          "type": "boolean"
+        }
+      }
+    },
+    "Page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "icon", "route", "inMenu", "blocks"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "name": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "route": {
+          "type": "string"
+        },
+        "parent": {
+          "$ref": "#/$defs/Id",
+          "description": "Parent page id for nested menu entries."
+        },
+        "inMenu": {
+          "type": "boolean"
+        },
+        "visibleTo": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Id"
+          },
+          "description": "Role ids; empty or missing means every role."
+        },
+        "permissions": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/PagePermission"
+          }
+        },
+        "script": {
+          "$ref": "#/$defs/PageScript"
+        },
+        "lifecycle": {
+          "$ref": "#/$defs/PageLifecycle"
+        },
+        "blocks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Block"
+          }
+        }
+      }
+    },
+    "PageScript": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lang", "source"],
+      "properties": {
+        "lang": {
+          "const": "js"
+        },
+        "file": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "bindings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "calls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "LifecycleHandler": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["code", "function"]
+        },
+        "code": {
+          "type": "string"
+        },
+        "fn": {
+          "type": "string",
+          "description": "Logic function name when kind = function."
+        },
+        "args": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "PageLifecycle": {
+      "type": "object",
+      "description": "hook name (onPageInit, onBeforeRender, onPageReady, onBeforeLeave, onPageError, ...) \u2192 handlers in order",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/LifecycleHandler"
+        }
+      }
+    },
+    "BlockStyle": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "radius": {
+          "type": "number"
+        },
+        "bg": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string"
+        },
+        "pad": {
+          "type": "number"
+        },
+        "margin": {
+          "type": "number"
+        },
+        "border": {
+          "type": "string",
+          "enum": ["none", "light", "strong", "accent"]
+        },
+        "shadow": {
+          "type": "string",
+          "enum": ["none", "soft", "raised"]
+        },
+        "width": {
+          "type": "string",
+          "enum": ["full", "wide", "medium", "narrow"]
+        },
+        "align": {
+          "type": "string",
+          "enum": ["left", "center", "right"]
+        },
+        "font": {
+          "type": "number"
+        }
+      }
+    },
+    "VisibilityCondition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["field", "op", "value"],
+      "properties": {
+        "field": {
+          "type": "string"
+        },
+        "op": {
+          "type": "string",
+          "enum": ["eq", "neq", "in", "empty", "not_empty"]
+        },
+        "value": {}
+      }
+    },
+    "BlockVisibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "roles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Id"
+          }
+        },
+        "condition": {
+          "$ref": "#/$defs/VisibilityCondition"
+        }
+      }
+    },
+    "BlockType": {
+      "type": "string",
+      "enum": [
+        "header",
+        "text",
+        "image",
+        "button",
+        "divider",
+        "stats",
+        "table",
+        "form",
+        "list",
+        "detail",
+        "input",
+        "select",
+        "checkbox",
+        "radio",
+        "switch",
+        "date",
+        "textarea",
+        "upload",
+        "bar",
+        "line",
+        "donut",
+        "calendar",
+        "progress",
+        "timeline",
+        "tabs",
+        "steps",
+        "alert",
+        "pagination",
+        "custom"
+      ]
+    },
+    "Block": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "ref", "row", "props"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/BlockType"
+        },
+        "ref": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9]*$",
+          "description": "Stable camelCase id used by page code (ctx.blocks.<ref>)."
+        },
+        "row": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Layout row; blocks with the same row sit side by side in array order."
+        },
+        "title": {
+          "type": "string"
+        },
+        "props": {
+          "type": "object",
+          "description": "Type-specific settings (source, columns, filter, variant, ...)."
+        },
+        "style": {
+          "$ref": "#/$defs/BlockStyle"
+        },
+        "visibility": {
+          "$ref": "#/$defs/BlockVisibility"
+        },
+        "component": {
+          "type": "string",
+          "description": "Custom component id when type = custom."
+        }
+      }
+    },
+    "TypedField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type", "req"],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "description": "string | number | integer | boolean | date | datetime | enum | object | array<\u2026> | file | any | row<table> | array<table>"
+        },
+        "req": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        },
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Allowed values for enum."
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TypedField"
+          }
+        }
+      }
+    },
+    "DataLayer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["connections", "tables"],
+      "properties": {
+        "connections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DbConnection"
+          }
+        },
+        "tables": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Table"
+          }
+        }
+      }
+    },
+    "DbEngine": {
+      "type": "string",
+      "enum": ["postgres", "mysql", "mssql", "mongo", "redis"]
+    },
+    "DbConnection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "engine", "role"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "name": {
+          "type": "string"
+        },
+        "engine": {
+          "$ref": "#/$defs/DbEngine"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["primary", "cache", "queue", "external"]
+        },
+        "host": {
+          "type": "string"
+        },
+        "port": {
+          "type": "integer"
+        },
+        "database": {
+          "type": "string"
+        },
+        "schema": {
+          "type": "string"
+        },
+        "ssl": {
+          "type": "boolean"
+        },
+        "credentials": {
+          "$ref": "#/$defs/EnvSecrets"
+        }
+      }
+    },
+    "TableFieldType": {
+      "type": "string",
+      "enum": [
+        "auto_number",
+        "text",
+        "long_text",
+        "number",
+        "currency",
+        "date",
+        "datetime",
+        "checkbox",
+        "single_select",
+        "multi_select",
+        "workflow_state",
+        "user_account",
+        "file",
+        "link",
+        "json"
+      ]
+    },
+    "TableField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "name", "type"],
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/TableFieldType"
+        },
+        "req": {
+          "type": "boolean"
+        },
+        "unique": {
+          "type": "boolean"
+        },
+        "link": {
+          "$ref": "#/$defs/Id",
+          "description": "Target table id for link fields."
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "storage": {
+          "type": "string",
+          "description": "Storage id for file fields."
+        },
+        "workflow": {
+          "type": "string"
+        }
+      }
+    },
+    "Table": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "icon", "connection", "fields"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "name": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "connection": {
+          "$ref": "#/$defs/Id"
+        },
+        "physicalName": {
+          "type": "string"
+        },
+        "ttl": {
+          "type": "string",
+          "description": "Redis key sets only."
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TableField"
+          }
+        }
+      }
+    },
+    "LogicLayer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["functions", "apis", "crons", "queues"],
+      "properties": {
+        "packages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LogicPackage"
+          }
+        },
+        "functions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LogicFunction"
+          }
+        },
+        "apis": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Api"
+          }
+        },
+        "crons": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Cron"
+          }
+        },
+        "queues": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Queue"
+          }
+        }
+      }
+    },
+    "LogicPackage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "kind"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["functions", "apis", "crons", "queues"]
+        },
+        "parent": {
+          "type": "string"
+        }
+      }
+    },
+    "StepType": {
+      "type": "string",
+      "enum": [
+        "if",
+        "switch",
+        "for",
+        "set",
+        "return",
+        "select",
+        "execute",
+        "http",
+        "produce",
+        "consume",
+        "call"
+      ]
+    },
+    "StepBranch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "steps"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string",
+          "description": "Then / Else / case value / Default / Each"
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Step"
+          }
+        }
+      }
+    },
+    "Step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "config"],
+      "description": "Branching steps keep their children in `branches` (if: Then/Else, switch: cases + Default, for: Each) so every editor walks one shape.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/StepType"
+        },
+        "note": {
+          "type": "string"
+        },
+        "config": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "branches": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/StepBranch"
+          }
+        }
+      }
+    },
+    "ReturnType": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TypedField"
+          }
+        }
+      }
+    },
+    "LogicFunction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "params", "returns", "steps"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9]*$"
+        },
+        "package": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "timeout": {
+          "type": "string"
+        },
+        "params": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TypedField"
+          }
+        },
+        "returns": {
+          "$ref": "#/$defs/ReturnType"
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Step"
+          }
+        }
+      }
+    },
+    "ApiAccess": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "who"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["public", "basic", "token"]
+        },
+        "who": {
+          "type": "string",
+          "enum": ["any", "roles"]
+        },
+        "roles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "perms": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "ApiRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contentType", "path", "headers", "query", "body"],
+      "properties": {
+        "contentType": {
+          "type": "string"
+        },
+        "path": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TypedField"
+          }
+        },
+        "headers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TypedField"
+          }
+        },
+        "query": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TypedField"
+          }
+        },
+        "body": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TypedField"
+          }
+        }
+      }
+    },
+    "ApiResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contentType", "fields"],
+      "properties": {
+        "contentType": {
+          "type": "string"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TypedField"
+          }
+        }
+      }
+    },
+    "Api": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "protocol", "method", "path", "access", "request", "responses", "steps"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "name": {
+          "type": "string"
+        },
+        "package": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "protocol": {
+          "type": "string",
+          "enum": ["rest", "soap", "grpc", "jsonrpc"]
+        },
+        "method": {
+          "type": "string",
+          "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"]
+        },
+        "path": {
+          "type": "string"
+        },
+        "service": {
+          "type": "string",
+          "description": "SOAP service / gRPC service name."
+        },
+        "operation": {
+          "type": "string",
+          "description": "SOAP operation / gRPC or JSON-RPC method name."
+        },
+        "access": {
+          "$ref": "#/$defs/ApiAccess"
+        },
+        "request": {
+          "$ref": "#/$defs/ApiRequest"
+        },
+        "responses": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/ApiResponse"
+          }
+        },
+        "cache": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["enabled"],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "ttl": {
+              "type": "string"
+            },
+            "varyBy": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Step"
+          }
+        }
+      }
+    },
+    "Cron": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "schedule", "timezone", "enabled", "steps"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "name": {
+          "type": "string"
+        },
+        "package": {
+          "type": "string"
+        },
+        "schedule": {
+          "type": "string"
+        },
+        "timezone": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Step"
+          }
+        }
+      }
+    },
+    "QueueSettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["concurrency", "retries", "backoff", "timeout", "ordered"],
+      "properties": {
+        "broker": {
+          "type": "string",
+          "enum": ["rabbitmq", "kafka"]
+        },
+        "concurrency": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "retries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "backoff": {
+          "type": "string",
+          "enum": ["fixed", "exponential"]
+        },
+        "timeout": {
+          "type": "string"
+        },
+        "ordered": {
+          "type": "boolean"
+        }
+      }
+    },
+    "Queue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "fields", "consumers", "settings"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "name": {
+          "type": "string"
+        },
+        "package": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TypedField"
+          }
+        },
+        "consumers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Consumer function names."
+        },
+        "settings": {
+          "$ref": "#/$defs/QueueSettings"
+        }
+      }
+    },
+    "StorageLayer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["object", "local"],
+      "properties": {
+        "object": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ObjectStorage"
+          }
+        },
+        "local": {
+          "$ref": "#/$defs/LocalStorage"
+        }
+      }
+    },
+    "Bucket": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "access", "versioning"],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "purpose": {
+          "type": "string"
+        },
+        "access": {
+          "type": "string",
+          "enum": ["private", "signed", "public"]
+        },
+        "versioning": {
+          "type": "boolean"
+        }
+      }
+    },
+    "ObjectStorage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "provider", "endpoint", "buckets"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "name": {
+          "type": "string"
+        },
+        "provider": {
+          "type": "string",
+          "enum": ["minio", "s3"]
+        },
+        "purpose": {
+          "type": "string",
+          "enum": ["files", "media", "backups", "exports"]
+        },
+        "endpoint": {
+          "type": "string"
+        },
+        "region": {
+          "type": "string"
+        },
+        "tls": {
+          "type": "boolean"
+        },
+        "credentials": {
+          "$ref": "#/$defs/EnvSecrets"
+        },
+        "buckets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Bucket"
+          }
+        }
+      }
+    },
+    "LocalFolder": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "path", "quota", "access"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "path": {
+          "type": "string"
+        },
+        "quota": {
+          "type": "string"
+        },
+        "access": {
+          "type": "string",
+          "enum": ["none", "read", "rw"]
+        },
+        "cleanup": {
+          "type": "string",
+          "description": "e.g. 7d; empty keeps files forever."
+        },
+        "backup": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["enabled"],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "target": {
+              "type": "string"
+            }
+          }
+        },
+        "purpose": {
+          "type": "string",
+          "description": "What the folder is used for (shown in Studio)."
+        }
+      }
+    },
+    "LocalStorage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["root", "folders"],
+      "properties": {
+        "root": {
+          "type": "string"
+        },
+        "folders": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LocalFolder"
+          }
+        }
+      }
+    },
+    "Workflow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "table", "states", "transitions"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "name": {
+          "type": "string"
+        },
+        "table": {
+          "$ref": "#/$defs/Id"
+        },
+        "states": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "name"],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/Id"
+              },
+              "name": {
+                "type": "string"
+              },
+              "tone": {
+                "type": "string"
+              },
+              "final": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "transitions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["from", "to", "roles"],
+            "properties": {
+              "from": {
+                "type": "string"
+              },
+              "to": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              },
+              "roles": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "requires": {
+                "type": "string",
+                "description": "Condition shown to people, e.g. \"Hours logged\"."
+              }
+            }
+          }
+        }
+      }
+    },
+    "ComponentPropType": {
+      "type": "string",
+      "enum": ["String", "Number", "Boolean", "Array", "Object"]
+    },
+    "ComponentProp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "label", "type", "input", "required"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9]*$"
+        },
+        "label": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/ComponentPropType"
+        },
+        "input": {
+          "type": "string",
+          "enum": [
+            "text",
+            "textarea",
+            "select",
+            "color",
+            "number",
+            "slider",
+            "toggle",
+            "source",
+            "list",
+            "json",
+            "record"
+          ]
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "default": {},
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ai": {
+          "type": "boolean",
+          "description": "Studio AI may fill this value."
+        }
+      }
+    },
+    "CustomComponent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "name", "file", "source", "props", "events", "status"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^component:"
+        },
+        "kind": {
+          "const": "vue-component"
+        },
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Za-z0-9]*$"
+        },
+        "folder": {
+          "type": "string",
+          "enum": ["components", "pages"]
+        },
+        "file": {
+          "type": "string"
+        },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["ai", "code"]
+            },
+            "prompt": {
+              "type": "string"
+            }
+          }
+        },
+        "props": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ComponentProp"
+          }
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "status": {
+          "type": "string",
+          "enum": ["building", "needs_review", "reviewed", "live", "out_of_sync"]
+        }
+      }
+    }
+  }
+}

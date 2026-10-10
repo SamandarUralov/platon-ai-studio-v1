@@ -1,0 +1,21 @@
+{
+  "name": "@platon/mocks",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./browser": "./src/browser.ts",
+    "./seed": "./src/seed/index.ts",
+    "./node": "./src/node.ts"
+  },
+  "scripts": {
+    "typecheck": "vue-tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@faker-js/faker": "^10.6.0",
+    "@platon/definition": "workspace:*",
+    "@platon/validators": "workspace:^",
+    "msw": "^3.0.2"
+  }
+}
