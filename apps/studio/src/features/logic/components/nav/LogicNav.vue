@@ -13,6 +13,7 @@ import { itemTitle } from '../../lib/items'
 import { PKG_KIND, type LogicItem, type NavEntry } from '../../lib/nav'
 import { itemStatus } from '../../lib/status'
 import NavGroup from './NavGroup.vue'
+import HideLeftPanel from '@/components/shell/HideLeftPanel.vue'
 
 const props = defineProps<{
   kind: LogicKind
@@ -135,6 +136,7 @@ defineExpose({ openSearch })
           <X :size="14" />
         </button>
       </div>
+      <HideLeftPanel />
     </div>
 
     <div class="min-h-0 flex-1 overflow-auto px-2 py-2 scroll-thin">

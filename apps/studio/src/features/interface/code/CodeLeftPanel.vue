@@ -11,6 +11,7 @@ import { useDefinitionStore } from '@/stores/definition'
 import { useInterfaceStore } from '../store'
 import { parseOutline, signature, type OutlineKind } from '../lib/script'
 import { usePageScript } from './usePageScript'
+import HideLeftPanel from '@/components/shell/HideLeftPanel.vue'
 
 const props = defineProps<{ page: Page }>()
 const { t } = useI18n()
@@ -34,8 +35,10 @@ const TONE: Record<OutlineKind, string> = {
 </script>
 
 <template>
-  <PanelHeader :title="t('interface.code.leftTitle')" :sub="t('interface.code.leftSub')" />
-  <div class="min-h-0 flex-1 overflow-y-auto pb-12 scroll-thin">
+  <PanelHeader :title="t('interface.code.leftTitle')" :sub="t('interface.code.leftSub')"
+    ><HideLeftPanel
+  /></PanelHeader>
+  <div class="min-h-0 flex-1 overflow-y-auto pb-3 scroll-thin">
     <SectionLabel :label="t('interface.code.outline')" :count="outline.length" />
     <div class="px-2">
       <button

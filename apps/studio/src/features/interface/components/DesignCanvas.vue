@@ -1,51 +1,42 @@
 <script setup lang="ts">
 /**
- * The design canvas: dotted background, the app frame at the chosen width and zoom, blocks in rows.
+ * The design canvas: dotted background and the app at the chosen width and zoom. The app itself is
+ * rendered by the Platon Sandbox in an iframe (Interface mode); selecting and dropping happen there
+ * and come back as Sandbox events, which we turn into definition edits. The selected block's
+ * quick actions are Studio chrome, drawn over the iframe at the rect the Sandbox reports.
  * Zoom: ⌘+wheel (and ⌘+/−/0 via the page). Pan: hold Space (or the hand tool) and drag.
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useResizeObserver } from '@vueuse/core'
-import { Download } from 'lucide-vue-next'
-import {
-  toRows,
-  type Block,
-  type BlockType,
-  type CustomComponent,
-  type DropSide,
-  type Page,
-} from '@platon/definition'
-import { AppFrame, statsSource, type RenderContext } from '@platon/renderer'
+import { canPlaceIn, type BlockType, type CustomComponent, type Page } from '@platon/definition'
+import { statsSource } from '@platon/renderer'
+import type { Rect, SandboxToStudio } from '@platon/bridge/sandbox'
+import SandboxFrame from '@/components/sandbox/SandboxFrame.vue'
+import BlockToolbar from './BlockToolbar.vue'
+import { ownerBlock, placementOf, toSandboxMeta } from '@/services/sandbox/meta'
 import { useDefinitionStore } from '@/stores/definition'
-import { useSessionStore } from '@/stores/session'
 import { useProjectId } from '@/composables/useProject'
 import { useShortcuts } from '@/composables/useShortcuts'
 import { useInterfaceStore } from '../store'
 import { useInterfaceEdits } from '../composables/useInterfaceEdits'
-import { useDropTarget, type DragData } from '../composables/dnd'
-import { createBlock } from '../lib/blocks'
+import { dragActive, takeLastDrag, type DragData } from '../composables/dnd'
+import { createBlock, moveAbility, moveTarget, type MoveDir } from '../lib/blocks'
 import { deviceOf, fitZoom } from '../lib/viewport'
 import { tablesFor, useTableRecords } from '../api'
-import CanvasBlock, { type MoveAbility } from './CanvasBlock.vue'
 
 const props = defineProps<{ page: Page }>()
 const emit = defineEmits<{ go: [pageId: string] }>()
 const { t } = useI18n()
 const def = useDefinitionStore()
-const session = useSessionStore()
 const ui = useInterfaceStore()
 const edits = useInterfaceEdits()
 const projectId = useProjectId()
 
 const definition = computed(() => def.definition!)
-const rows = computed(() => toRows(props.page.blocks))
 const tableIds = computed(() => tablesFor(props.page, statsSource(definition.value)))
 const records = useTableRecords(projectId, tableIds)
-const ctx = computed<RenderContext>(() => ({
-  definition: definition.value,
-  records: records.value,
-  design: true,
-}))
+const build = computed(() => toSandboxMeta(definition.value, { records: records.value }))
 const components = computed(() => new Map((definition.value.components ?? []).map((c) => [c.id, c])))
 
 // ── zoom & pan ─────────────────────────────────────────────────────────────
@@ -97,65 +88,61 @@ const cursor = computed(() =>
   panning.value ? 'cursor-grabbing' : space.value || ui.hand ? 'cursor-grab' : '',
 )
 
-// ── edits ──────────────────────────────────────────────────────────────────
-function onDrop(d: DragData, target: string | null, side: DropSide) {
+// ── sandbox events → edits ─────────────────────────────────────────────────
+function onSelect(id: string | null) {
+  ui.select(ownerBlock(build.value.nodes, id))
+}
+
+function onHover(id: string | null) {
+  ui.setHovered(ownerBlock(build.value.nodes, id))
+}
+
+// ── block toolbar ──────────────────────────────────────────────────────────
+const selRect = ref<{ blockId: string | null; rect: Rect | null }>({ blockId: null, rect: null })
+const selBlock = computed(() => props.page.blocks.find((b) => b.id === ui.selected))
+/** Only while the reported rect is for the block Studio has selected (not a stale one). */
+const toolbarRect = computed(() =>
+  selBlock.value && ownerBlock(build.value.nodes, selRect.value.blockId) === selBlock.value.id
+    ? selRect.value.rect
+    : null,
+)
+const can = computed(() =>
+  selBlock.value
+    ? moveAbility(props.page.blocks, selBlock.value.id)
+    : { up: false, down: false, left: false, right: false },
+)
+
+function moveSelected(dir: MoveDir) {
+  const b = selBlock.value
+  const to = b && moveTarget(props.page.blocks, b.id, dir)
+  if (b && to) edits.moveBlock(props.page, b.id, to.target, to.side)
+}
+function duplicateSelected() {
+  if (selBlock.value) ui.select(edits.duplicateBlock(props.page, selBlock.value).id)
+}
+function removeSelected() {
+  if (!selBlock.value) return
+  edits.deleteBlock(props.page, selBlock.value)
+  ui.select(null)
+}
+
+function onDrop({ parentId, index, source }: SandboxToStudio['drop']) {
+  const nodes = build.value.nodes
+  const at = placementOf(nodes, props.page.id, parentId, index)
+  const moved = source?.blockId ? ownerBlock(nodes, source.blockId) : null
+  const d: DragData | null = source?.blockId ? (moved ? { kind: 'move', id: moved } : null) : takeLastDrag()
+  if (!at || !d) return
   if (d.kind === 'move') {
-    edits.moveBlock(props.page, d.id, target, side)
+    // Dropped on itself, or a container into its own cells: nothing to do.
+    if (at.target === d.id || !canPlaceIn(props.page.blocks, d.id, at.cell)) return
+    edits.moveBlock(props.page, d.id, at.target, at.side, at.cell)
     ui.select(d.id)
     return
   }
   const comp: CustomComponent | undefined = d.component ? components.value.get(d.component) : undefined
   const b = createBlock(d.type as BlockType, definition.value, props.page, comp)
-  if (edits.addBlock(props.page, b, target, side)) ui.select(b.id)
+  if (edits.addBlock(props.page, b, at.target, at.side, at.cell)) ui.select(b.id)
 }
-
-function ability(b: Block): MoveAbility {
-  const r = rows.value.findIndex((row) => row.some((x) => x.id === b.id))
-  const row = rows.value[r]!
-  const c = row.findIndex((x) => x.id === b.id)
-  return {
-    up: r > 0 || row.length > 1,
-    down: r < rows.value.length - 1 || row.length > 1,
-    left: c > 0,
-    right: c < row.length - 1,
-  }
-}
-
-function move(b: Block, dir: keyof MoveAbility) {
-  const r = rows.value.findIndex((row) => row.some((x) => x.id === b.id))
-  const row = rows.value[r]!
-  const c = row.findIndex((x) => x.id === b.id)
-  if (dir === 'left') edits.moveBlock(props.page, b.id, row[c - 1]!.id, 'left')
-  else if (dir === 'right') edits.moveBlock(props.page, b.id, row[c + 1]!.id, 'right')
-  else if (dir === 'up') {
-    const prev = row.length > 1 ? row[0]! : rows.value[r - 1]?.[0]
-    if (prev) edits.moveBlock(props.page, b.id, prev.id, 'before')
-  } else {
-    const next = row.length > 1 ? row.at(-1)! : rows.value[r + 1]?.at(-1)
-    if (next) edits.moveBlock(props.page, b.id, next.id, 'after')
-  }
-}
-
-function restricted(b: Block): string | null {
-  const v = b.visibility
-  if (!v?.roles && !v?.condition) return null
-  if (v.roles && !v.roles.length) return t('interface.vis.nobodyShort')
-  if (v.roles) return v.roles.map((r) => definition.value.roles.find((x) => x.id === r)?.name ?? r).join(', ')
-  return t('interface.vis.conditional')
-}
-
-const endZone = ref<HTMLElement>()
-const endOver = ref(false)
-useDropTarget(endZone, {
-  over: (s) => (endOver.value = !!s),
-  drop: (d) => onDrop(d, null, 'after'),
-  edges: ['top'],
-})
-
-const user = computed(() => ({
-  name: session.user?.name ?? 'Maya Chen',
-  role: definition.value.roles[0]?.name ?? '',
-}))
 </script>
 
 <template>
@@ -170,50 +157,35 @@ const user = computed(() => ({
       <div class="px-0.5 pb-2 font-mono text-xs font-semibold whitespace-nowrap text-faint">
         {{ frameInfo }}
       </div>
-      <div
-        class="overflow-hidden rounded-[14px] border border-line shadow-card"
-        :class="space || ui.hand ? 'pointer-events-none' : ''"
-      >
-        <AppFrame
-          :definition="definition"
-          :page-id="page.id"
-          :width="ui.width"
-          :user="user"
-          @navigate="emit('go', $event)"
+      <div class="relative">
+        <div
+          class="overflow-hidden rounded-[14px] border border-line shadow-card"
+          :class="space || ui.hand ? 'pointer-events-none' : ''"
         >
-          <div class="flex flex-col gap-5 pt-1">
-            <div v-for="(row, i) in rows" :key="i" class="flex flex-wrap gap-4">
-              <CanvasBlock
-                v-for="b in row"
-                :key="b.id"
-                :block="b"
-                :ctx="ctx"
-                :selected="ui.selected === b.id"
-                :can="ability(b)"
-                :restricted="restricted(b)"
-                :component="b.type === 'custom' ? components.get(b.component ?? '') : null"
-                :zoom="zoom"
-                :first="i === 0"
-                @select="ui.select(b.id)"
-                @move="move(b, $event)"
-                @duplicate="ui.select(edits.duplicateBlock(page, b).id)"
-                @remove="(edits.deleteBlock(page, b), ui.select(null))"
-                @drop="(d, s) => onDrop(d, b.id, s)"
-              />
-            </div>
-            <div
-              ref="endZone"
-              class="flex h-14 items-center justify-center gap-2 rounded-xl border-2 border-dashed text-sm transition-colors"
-              :class="
-                endOver ? 'border-primary bg-primary-tint text-primary-strong' : 'border-line text-faint'
-              "
-            >
-              <Download :size="14" />{{
-                page.blocks.length ? t('interface.canvas.dropHere') : t('interface.canvas.emptyPage')
-              }}
-            </div>
-          </div>
-        </AppFrame>
+          <SandboxFrame
+            :meta="build.meta"
+            mode="interface"
+            :page-id="page.id"
+            :selected="ui.selected"
+            fit
+            return-focus
+            :dragging="dragActive"
+            @select="onSelect"
+            @hover="onHover"
+            @rect="selRect = $event"
+            @drop="onDrop"
+            @page="emit('go', $event)"
+          />
+        </div>
+        <BlockToolbar
+          v-if="toolbarRect && !dragActive"
+          :rect="toolbarRect"
+          :can="can"
+          :zoom="zoom"
+          @move="moveSelected"
+          @duplicate="duplicateSelected"
+          @remove="removeSelected"
+        />
       </div>
     </div>
   </div>

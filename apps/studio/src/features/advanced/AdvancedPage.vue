@@ -16,6 +16,7 @@ import { useProjectId } from '@/composables/useProject'
 import { buildDefinitionTree, filterTree, trail, type DefNode } from './definitionTree'
 import { linkForPointer } from '@/composables/definitionLinks'
 import JsonLines from './JsonLines.vue'
+import HideLeftPanel from '@/components/shell/HideLeftPanel.vue'
 
 const { t } = useI18n()
 const def = useDefinitionStore()
@@ -84,7 +85,7 @@ const total = (s: DefNode) => s.children?.reduce((a, c) => a + (c.children?.leng
 <template>
   <LayerShell :has-right="false">
     <template #left>
-      <PanelHeader :title="t('advanced.title')" :sub="t('advanced.sub')" />
+      <PanelHeader :title="t('advanced.title')" :sub="t('advanced.sub')"><HideLeftPanel /></PanelHeader>
       <div class="border-b border-line-faint p-2.5">
         <PInput
           v-model="query"

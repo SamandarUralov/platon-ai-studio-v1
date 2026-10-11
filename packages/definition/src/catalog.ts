@@ -7,21 +7,103 @@ import type { ChangeArea } from './generated/change'
 
 export type CatalogTone = 'neutral' | 'primary' | 'ok' | 'warn' | 'danger' | 'purple' | 'teal' | 'info' | 'ai'
 
+/**
+ * One inspector setting for a block prop, so most blocks get their Content section from data
+ * instead of a hand-written template.
+ */
+export interface PropField {
+  key: string
+  label: string
+  input: 'text' | 'textarea' | 'number' | 'select' | 'switch' | 'list'
+  options?: [string, string][]
+  min?: number
+  max?: number
+  hint?: string
+  /** Value shown (and used by the renderer) when the prop is missing. */
+  def?: string | number | boolean
+  /** Only show while another prop has one of these values. */
+  when?: { key: string; is: (string | number | boolean)[] }
+}
+
 export interface BlockMeta {
   label: string
   icon: string
   hint: string
-  group: 'layout' | 'data' | 'form' | 'charts' | 'navigation' | 'custom'
+  group: 'layout' | 'containers' | 'data' | 'form' | 'charts' | 'navigation' | 'custom'
   /** Comes from the Platon UI Kit (shown with a "UI Kit" tag in the palette). */
   kit?: boolean
   events: string[]
   /** Variants offered in the inspector. */
   variants?: [string, string][]
+  /** Extra Content settings rendered from data (see PropField). */
+  fields?: PropField[]
+  /** No Title setting in the inspector. */
+  noTitle?: boolean
   tags?: string
 }
 
+/** Colour variants shared by Platon UI Kit buttons, badges and segmented buttons. */
+export const KIT_TONES: [string, string][] = [
+  ['primary', 'Primary'],
+  ['secondary', 'Secondary'],
+  ['info', 'Info'],
+  ['success', 'Success'],
+  ['warning', 'Warning'],
+  ['error', 'Error'],
+]
+const KIT_SIZES: [string, string][] = [
+  ['small', 'Small'],
+  ['medium', 'Medium'],
+  ['large', 'Large'],
+]
+const GAPS: [string, string][] = [
+  ['none', 'None'],
+  ['sm', 'Small'],
+  ['md', 'Medium'],
+  ['lg', 'Large'],
+]
+const STACK_ON: [string, string][] = [
+  ['mobile', 'On phones'],
+  ['tablet', 'On tablets and phones'],
+  ['never', 'Never'],
+]
+const gap: PropField = { key: 'gap', label: 'Gap', input: 'select', options: GAPS, def: 'md' }
+const stackOn: PropField = {
+  key: 'stackOn',
+  label: 'Stack cells',
+  input: 'select',
+  options: STACK_ON,
+  def: 'mobile',
+  hint: 'Below this width cells sit under each other',
+}
+const required: PropField = { key: 'required', label: 'Required', input: 'switch', def: false }
+const compact: PropField = {
+  key: 'size',
+  label: 'Size',
+  input: 'select',
+  options: [
+    ['default', 'Default'],
+    ['compact', 'Compact'],
+  ],
+  def: 'default',
+}
+
+/** Chart blocks that read grouped counts from `source` + `groupBy` (sample data otherwise). */
+export const CHART_TYPES: BlockType[] = [
+  'bar',
+  'line',
+  'donut',
+  'area',
+  'pie',
+  'hbar',
+  'stacked',
+  'funnel',
+  'scatter',
+]
+
 export const BLOCK_GROUPS: { id: BlockMeta['group']; label: string }[] = [
   { id: 'layout', label: 'Text & layout' },
+  { id: 'containers', label: 'Layout & containers' },
   { id: 'data', label: 'Data' },
   { id: 'form', label: 'Form controls' },
   { id: 'charts', label: 'Charts & calendar' },
@@ -58,10 +140,199 @@ export const BLOCKS: Record<BlockType, BlockMeta> = {
     icon: 'mouse-pointer-click',
     hint: 'Start an action',
     group: 'layout',
+    kit: true,
     events: ['click'],
+    variants: KIT_TONES,
+    fields: [
+      { key: 'outlined', label: 'Outlined', input: 'switch', def: false },
+      { key: 'size', label: 'Size', input: 'select', options: KIT_SIZES, def: 'medium' },
+      { key: 'badge', label: 'Badge', input: 'text', hint: 'Small counter on the button, e.g. 3' },
+    ],
     tags: 'action cta link',
   },
-  divider: { label: 'Divider', icon: 'minus', hint: 'Separate sections', group: 'layout', events: [] },
+  divider: {
+    label: 'Divider',
+    icon: 'minus',
+    hint: 'Separate sections',
+    group: 'layout',
+    events: [],
+    noTitle: true,
+  },
+  badge: {
+    label: 'Badge',
+    icon: 'tag',
+    hint: 'Short status or label',
+    group: 'layout',
+    kit: true,
+    events: ['click'],
+    variants: KIT_TONES,
+    noTitle: true,
+    fields: [
+      { key: 'text', label: 'Text', input: 'text', def: 'New' },
+      {
+        key: 'size',
+        label: 'Size',
+        input: 'select',
+        options: [
+          ['sm', 'Small'],
+          ['md', 'Medium'],
+          ['lg', 'Large'],
+        ],
+        def: 'md',
+      },
+    ],
+    tags: 'tag pill chip status label',
+  },
+  spacer: {
+    label: 'Spacer',
+    icon: 'move-vertical',
+    hint: 'Empty space between blocks',
+    group: 'layout',
+    events: [],
+    noTitle: true,
+    fields: [{ key: 'size', label: 'Height (px)', input: 'number', min: 4, max: 240, def: 24 }],
+    tags: 'gap space margin',
+  },
+  container: {
+    label: 'Container',
+    icon: 'square-dashed',
+    hint: 'Wrap blocks in a card or box',
+    group: 'containers',
+    events: [],
+    fields: [
+      {
+        key: 'variant',
+        label: 'Look',
+        input: 'select',
+        options: [
+          ['card', 'Card'],
+          ['outlined', 'Outlined'],
+          ['filled', 'Filled'],
+          ['plain', 'Plain'],
+        ],
+        def: 'card',
+      },
+      {
+        key: 'direction',
+        label: 'Direction',
+        input: 'select',
+        options: [
+          ['column', 'Top to bottom'],
+          ['row', 'Side by side'],
+        ],
+        def: 'column',
+      },
+      gap,
+      {
+        key: 'padding',
+        label: 'Padding',
+        input: 'select',
+        options: GAPS,
+        def: 'md',
+      },
+    ],
+    tags: 'wrapper card box panel group',
+  },
+  section: {
+    label: 'Section',
+    icon: 'panel-top',
+    hint: 'Heading with blocks under it',
+    group: 'containers',
+    events: [],
+    fields: [
+      { key: 'subtitle', label: 'Description', input: 'text' },
+      {
+        key: 'variant',
+        label: 'Look',
+        input: 'select',
+        options: [
+          ['plain', 'Plain'],
+          ['card', 'Card'],
+          ['tinted', 'Tinted'],
+        ],
+        def: 'plain',
+      },
+      gap,
+    ],
+    tags: 'wrapper group heading area',
+  },
+  grid: {
+    label: 'Grid',
+    icon: 'layout-grid',
+    hint: 'Equal cells in rows and columns',
+    group: 'containers',
+    events: [],
+    noTitle: true,
+    fields: [
+      { key: 'columns', label: 'Columns', input: 'number', min: 1, max: 6, def: 2 },
+      { key: 'rows', label: 'Rows', input: 'number', min: 1, max: 6, def: 1 },
+      gap,
+      stackOn,
+    ],
+    tags: 'layout cells responsive wrapper',
+  },
+  columns: {
+    label: 'Columns',
+    icon: 'columns-3',
+    hint: 'Side-by-side columns with set widths',
+    group: 'containers',
+    events: [],
+    noTitle: true,
+    fields: [
+      {
+        key: 'ratio',
+        label: 'Widths',
+        input: 'select',
+        options: [
+          ['1:1', '1 : 1'],
+          ['2:1', '2 : 1'],
+          ['1:2', '1 : 2'],
+          ['1:1:1', '1 : 1 : 1'],
+          ['1:2:1', '1 : 2 : 1'],
+          ['1:1:1:1', '1 : 1 : 1 : 1'],
+        ],
+        def: '1:1',
+      },
+      gap,
+      {
+        key: 'align',
+        label: 'Vertical align',
+        input: 'select',
+        options: [
+          ['stretch', 'Stretch'],
+          ['start', 'Top'],
+          ['center', 'Middle'],
+          ['end', 'Bottom'],
+        ],
+        def: 'stretch',
+      },
+      stackOn,
+    ],
+    tags: 'layout split sidebar two three',
+  },
+  accordion: {
+    label: 'Accordion',
+    icon: 'list-collapse',
+    hint: 'Panels that open and close',
+    group: 'containers',
+    events: ['change'],
+    fields: [
+      { key: 'panels', label: 'Panels', input: 'list', hint: 'Comma separated' },
+      {
+        key: 'open',
+        label: 'Open at start',
+        input: 'select',
+        options: [
+          ['first', 'First panel'],
+          ['all', 'All panels'],
+          ['none', 'None'],
+        ],
+        def: 'first',
+      },
+      { key: 'multiple', label: 'Several open at once', input: 'switch', def: false },
+    ],
+    tags: 'collapse expand faq panels wrapper',
+  },
   stats: {
     label: 'Numbers',
     icon: 'chart-column',
@@ -75,7 +346,12 @@ export const BLOCKS: Record<BlockType, BlockMeta> = {
     icon: 'table',
     hint: 'List records from a table',
     group: 'data',
+    kit: true,
     events: ['rowClick', 'select', 'load'],
+    fields: [
+      { key: 'pageSize', label: 'Rows per page', input: 'number', min: 1, max: 500, def: 25 },
+      { key: 'search', label: 'Search box', input: 'switch', def: true },
+    ],
     tags: 'grid list records rows',
   },
   form: {
@@ -104,8 +380,15 @@ export const BLOCKS: Record<BlockType, BlockMeta> = {
     variants: [
       ['text', 'Text'],
       ['email', 'Email'],
+      ['number', 'Number'],
       ['search', 'Search'],
       ['password', 'Password'],
+    ],
+    fields: [
+      required,
+      { key: 'clearable', label: 'Clear button', input: 'switch', def: false },
+      { key: 'tooltip', label: 'Tooltip', input: 'text' },
+      compact,
     ],
   },
   select: {
@@ -115,6 +398,13 @@ export const BLOCKS: Record<BlockType, BlockMeta> = {
     group: 'form',
     kit: true,
     events: ['change'],
+    fields: [
+      { key: 'multiple', label: 'Pick several', input: 'switch', def: false },
+      { key: 'clearable', label: 'Clear button', input: 'switch', def: false },
+      required,
+      { key: 'help', label: 'Help text', input: 'text' },
+      compact,
+    ],
   },
   checkbox: {
     label: 'Checkbox',
@@ -147,6 +437,22 @@ export const BLOCKS: Record<BlockType, BlockMeta> = {
     group: 'form',
     kit: true,
     events: ['change'],
+    variants: [
+      ['single', 'Single date'],
+      ['range', 'Date range'],
+    ],
+    fields: [
+      {
+        key: 'time',
+        label: 'With time',
+        input: 'switch',
+        def: false,
+        when: { key: 'variant', is: ['single'] },
+      },
+      { key: 'placeholder', label: 'Placeholder', input: 'text', def: 'Pick a date' },
+      { key: 'help', label: 'Help text', input: 'text' },
+      required,
+    ],
   },
   textarea: {
     label: 'Text area',
@@ -155,6 +461,11 @@ export const BLOCKS: Record<BlockType, BlockMeta> = {
     group: 'form',
     kit: true,
     events: ['change'],
+    fields: [
+      { key: 'maxLength', label: 'Max length', input: 'number', min: 1, max: 100000, def: 500 },
+      { key: 'help', label: 'Help text', input: 'text' },
+      required,
+    ],
   },
   upload: {
     label: 'File upload',
@@ -163,6 +474,63 @@ export const BLOCKS: Record<BlockType, BlockMeta> = {
     group: 'form',
     kit: true,
     events: ['change'],
+    variants: [
+      ['dropzone', 'Drop zone'],
+      ['field', 'Compact field'],
+      ['image', 'Photo'],
+    ],
+    fields: [
+      { key: 'placeholder', label: 'Placeholder', input: 'text', def: 'Choose files' },
+      { key: 'accept', label: 'Allowed types', input: 'text', hint: 'e.g. image/*,.pdf' },
+      { key: 'maxSizeMb', label: 'Max size (MB)', input: 'number', min: 1, max: 500, def: 10 },
+      {
+        key: 'multiple',
+        label: 'Several files',
+        input: 'switch',
+        def: true,
+        when: { key: 'variant', is: ['dropzone', 'field'] },
+      },
+      { key: 'help', label: 'Help text', input: 'text' },
+    ],
+  },
+  segmented: {
+    label: 'Segmented buttons',
+    icon: 'rows-3',
+    hint: 'Pick options as buttons',
+    group: 'form',
+    kit: true,
+    events: ['change'],
+    variants: KIT_TONES,
+    fields: [
+      { key: 'multiple', label: 'Pick several', input: 'switch', def: false },
+      { key: 'outlined', label: 'Outlined', input: 'switch', def: true },
+      { key: 'size', label: 'Size', input: 'select', options: KIT_SIZES, def: 'medium' },
+    ],
+    tags: 'toggle group choice chips filter',
+  },
+  richtext: {
+    label: 'Rich text',
+    icon: 'pilcrow',
+    hint: 'Formatted text editor',
+    group: 'form',
+    kit: true,
+    events: ['change'],
+    fields: [
+      {
+        key: 'mode',
+        label: 'Mode',
+        input: 'select',
+        options: [
+          ['edit', 'People can edit'],
+          ['read', 'Read only'],
+        ],
+        def: 'edit',
+      },
+      { key: 'text', label: 'Starting text', input: 'textarea' },
+      { key: 'minHeight', label: 'Min height (px)', input: 'number', min: 60, max: 800, def: 140 },
+      required,
+    ],
+    tags: 'editor wysiwyg html notes formatting',
   },
   bar: {
     label: 'Bar chart',
@@ -187,6 +555,90 @@ export const BLOCKS: Record<BlockType, BlockMeta> = {
     group: 'charts',
     kit: true,
     events: ['click'],
+  },
+  area: {
+    label: 'Area chart',
+    icon: 'chart-area',
+    hint: 'Volume over time',
+    group: 'charts',
+    events: ['click'],
+    tags: 'trend filled',
+  },
+  hbar: {
+    label: 'Horizontal bars',
+    icon: 'chart-bar',
+    hint: 'Rank categories',
+    group: 'charts',
+    events: ['click'],
+    tags: 'ranking leaderboard top',
+  },
+  stacked: {
+    label: 'Stacked bars',
+    icon: 'chart-column-stacked',
+    hint: 'Parts of each category',
+    group: 'charts',
+    events: ['click'],
+    fields: [
+      { key: 'seriesBy', label: 'Split by', input: 'text', hint: 'Field key; sample series otherwise' },
+    ],
+    tags: 'grouped series breakdown',
+  },
+  pie: {
+    label: 'Pie chart',
+    icon: 'chart-pie',
+    hint: 'Share of a whole',
+    group: 'charts',
+    events: ['click'],
+    tags: 'share percent',
+  },
+  funnel: {
+    label: 'Funnel',
+    icon: 'funnel',
+    hint: 'Drop-off between stages',
+    group: 'charts',
+    events: ['click'],
+    tags: 'conversion pipeline stages',
+  },
+  scatter: {
+    label: 'Scatter plot',
+    icon: 'chart-scatter',
+    hint: 'Relation of two numbers',
+    group: 'charts',
+    events: ['click'],
+    fields: [
+      { key: 'xField', label: 'X field', input: 'text', hint: 'Number field key' },
+      { key: 'yField', label: 'Y field', input: 'text', hint: 'Number field key' },
+    ],
+    tags: 'correlation dots xy',
+  },
+  gauge: {
+    label: 'Gauge',
+    icon: 'gauge',
+    hint: 'One value against a target',
+    group: 'charts',
+    events: [],
+    fields: [
+      { key: 'value', label: 'Value', input: 'number', def: 72 },
+      { key: 'max', label: 'Target', input: 'number', min: 1, def: 100 },
+      { key: 'unit', label: 'Unit', input: 'text', def: '%' },
+    ],
+    tags: 'meter dial target goal',
+  },
+  kpi: {
+    label: 'KPI card',
+    icon: 'trending-up',
+    hint: 'One number with its trend',
+    group: 'data',
+    events: ['click'],
+    fields: [
+      { key: 'value', label: 'Value', input: 'text', hint: 'Leave empty to count records of the source' },
+      { key: 'prefix', label: 'Before value', input: 'text', hint: 'e.g. $' },
+      { key: 'suffix', label: 'After value', input: 'text', hint: 'e.g. %' },
+      { key: 'delta', label: 'Change', input: 'text', def: '+12%', hint: 'Starts with + or −' },
+      { key: 'caption', label: 'Caption', input: 'text', def: 'vs last month' },
+      { key: 'sparkline', label: 'Sparkline', input: 'switch', def: true },
+    ],
+    tags: 'metric number stat counter trend',
   },
   calendar: {
     label: 'Calendar',
@@ -215,10 +667,26 @@ export const BLOCKS: Record<BlockType, BlockMeta> = {
   tabs: {
     label: 'Tabs',
     icon: 'panels-top-left',
-    hint: 'Switch between panels',
-    group: 'navigation',
+    hint: 'Switch between panels of blocks',
+    group: 'containers',
     kit: true,
     events: ['change'],
+    noTitle: true,
+    fields: [
+      {
+        key: 'position',
+        label: 'Tab position',
+        input: 'select',
+        options: [
+          ['top', 'Top'],
+          ['bottom', 'Bottom'],
+          ['left', 'Left'],
+          ['right', 'Right'],
+        ],
+        def: 'top',
+      },
+    ],
+    tags: 'panels wrapper switch',
   },
   steps: {
     label: 'Steps',
@@ -253,6 +721,32 @@ export const BLOCKS: Record<BlockType, BlockMeta> = {
       ['full', 'Full · range and page size'],
       ['simple', 'Simple · previous / next'],
     ],
+    noTitle: true,
+  },
+  breadcrumb: {
+    label: 'Breadcrumb',
+    icon: 'chevrons-right',
+    hint: 'Where the page sits',
+    group: 'navigation',
+    events: ['click'],
+    noTitle: true,
+    fields: [
+      { key: 'items', label: 'Items', input: 'list', hint: 'Comma separated, last is the current page' },
+    ],
+    tags: 'path trail navigation',
+  },
+  empty: {
+    label: 'Empty state',
+    icon: 'inbox',
+    hint: 'Nothing here yet, with a next step',
+    group: 'navigation',
+    events: ['buttonClick'],
+    fields: [
+      { key: 'text', label: 'Description', input: 'textarea', def: 'Create the first one to get started.' },
+      { key: 'icon', label: 'Icon', input: 'text', def: 'inbox', hint: 'Lucide icon name' },
+      { key: 'buttonLabel', label: 'Button', input: 'text' },
+    ],
+    tags: 'placeholder blank zero nothing',
   },
   custom: {
     label: 'Custom component',
@@ -293,6 +787,15 @@ export const BLOCK_API: Partial<Record<BlockType, [string, string, string][]>> =
   text: [['text', 'string', 'Text content']],
   button: [['label', 'string', 'Button text']],
   image: [['src', 'string', 'Image URL']],
+  badge: [['text', 'string', 'Badge text']],
+  tabs: [['active', 'number', 'Index of the open tab']],
+  accordion: [['open', 'number[]', 'Indexes of the open panels']],
+  kpi: [
+    ['value', 'string | number', 'Main number'],
+    ['delta', 'string', 'Change, e.g. +12%'],
+  ],
+  gauge: [['value', 'number', 'Current value']],
+  richtext: [['value', 'string', 'HTML content']],
 }
 
 /** Event → argument name passed to handlers. */

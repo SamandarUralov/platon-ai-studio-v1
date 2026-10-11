@@ -66,6 +66,7 @@ import {
   syncState,
 } from './sfc'
 import { generations, useComponentActions, useSamples } from './useComponents'
+import HideLeftPanel from '@/components/shell/HideLeftPanel.vue'
 
 const props = defineProps<{ projectId: string; componentId: string }>()
 const emit = defineEmits<{ create: [method: 'ai' | 'code'] }>()
@@ -365,6 +366,7 @@ function open(id: string) {
           :label="t('components.askAi')"
           @click="emit('create', 'ai')"
         />
+        <HideLeftPanel />
       </div>
       <SandboxFileTree
         :files="files.data.value"

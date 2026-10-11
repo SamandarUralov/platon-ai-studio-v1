@@ -1,8 +1,28 @@
 <script setup lang="ts">
-/** Platon UI Kit form controls: input, select, checkbox, radio, switch, date, textarea, upload. */
+/**
+ * Form controls rendered with the Platon UI Kit: input, select, checkbox, radio, switch, date,
+ * textarea, upload, segmented buttons and rich text. Radio has no kit component yet, so it keeps a
+ * token-styled native group.
+ */
 import { computed, ref } from 'vue'
-import { CalendarDays, Paperclip, Upload, X } from 'lucide-vue-next'
-import { type BlockProps, FIELD, list, str, tr, useResolved } from './props'
+import {
+  KitCheckbox,
+  KitDatePicker,
+  KitDateRangePicker,
+  KitFileUpload,
+  KitImageUpload,
+  KitInput,
+  KitInputFileUpload,
+  KitInputSearch,
+  KitMultiselectButton,
+  KitRichTextEditor,
+  KitSelectItem,
+  KitSelectWrapper,
+  KitSwitch,
+  KitTextarea,
+  kitVariant,
+} from '../kit'
+import { type BlockProps, list, str, tr, useResolved } from './props'
 
 const props = defineProps<BlockProps>()
 const emit = defineEmits<{ event: [name: string, arg?: unknown] }>()
@@ -13,13 +33,33 @@ const opts = computed(() => {
   const o = list(r.value.options)
   return o.length ? o : ['Low', 'Normal', 'High', 'Urgent']
 })
-const disabled = computed(() => props.ctx.design || r.value.disabled === true)
+// The canvas makes blocks inert, so controls stay enabled there and keep their normal look.
+const disabled = computed(() => r.value.disabled === true)
+const on = (k: string, d = false) => (r.value[k] === undefined ? d : r.value[k] === true)
+const num = (k: string, d: number) =>
+  Number.isFinite(Number(r.value[k])) && r.value[k] !== '' ? Number(r.value[k]) : d
+const help = computed(() => str(r.value.help) || undefined)
+const size = computed(() => (r.value.size === 'compact' ? 'compact' : 'default'))
+const locale = computed(() => {
+  const l = props.ctx.lang ?? props.ctx.definition.settings.defaultLanguage ?? 'en'
+  return l.includes('-') ? l : `${l}-${l === 'en' ? 'US' : l.toUpperCase()}`
+})
 
-const text = ref('')
+const text = ref(str(r.value.value))
+const selected = ref<unknown>(on('multiple') ? [] : undefined)
 const picked = ref<string[]>([])
-const on = ref(r.value.checked === true)
-const files = ref<string[]>(['site-photo-01.jpg'])
+const checked = ref(r.value.checked === true)
+const date = ref<unknown>(undefined)
+const files = ref<File[]>([])
+const image = ref<string | File | undefined>(undefined)
+const html = ref(str(r.value.text) ? `<p>${escapeHtml(str(r.value.text))}</p>` : '')
 
+function escapeHtml(s: string) {
+  return s.replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
+  )
+}
 function set<T>(v: T) {
   emit('event', 'change', v)
 }
@@ -31,132 +71,191 @@ function pick(o: string) {
   picked.value = [o]
   set(o)
 }
+const variant = computed(() => str(r.value.variant))
 const inputType = computed(
-  () => ({ email: 'email', search: 'search', password: 'password' })[str(r.value.variant)] ?? 'text',
+  () => ({ email: 'email', number: 'number', password: 'password' })[variant.value] ?? 'text',
 )
+const segments = computed(() => opts.value.map((o) => ({ value: o, label: o })))
 </script>
 
 <template>
-  <div class="min-w-0">
-    <div
-      v-if="label && t !== 'switch'"
-      class="mb-1.5 flex items-center text-[12.5px] font-semibold text-(--app-fg-2)"
-    >
-      {{ label }}
-      <span v-if="t === 'textarea'" class="ml-auto font-normal text-(--app-faint)"
-        >{{ text.length }} / 500</span
-      >
-    </div>
-
+  <div class="pk min-w-0">
     <template v-if="t === 'input'">
-      <input
+      <KitInputSearch
+        v-if="variant === 'search'"
+        v-model="text"
+        :placeholder="str(r.placeholder, label || 'Search…')"
+        :disabled="disabled"
+        :clearable="on('clearable')"
+        :size="size"
+        @search="set(text)"
+        @update:model-value="set($event)"
+      />
+      <KitInput
+        v-else
         v-model="text"
         :type="inputType"
-        :class="FIELD"
-        :disabled="disabled"
+        :label="label || undefined"
         :placeholder="str(r.placeholder)"
+        :disabled="disabled"
+        :required="on('required')"
+        :clearable="on('clearable')"
+        :tooltip="str(r.tooltip) || undefined"
+        :helper-text="help"
+        :size="size"
         @change="set(text)"
       />
-      <p v-if="r.help" class="mt-1 mb-0 text-[12px] text-(--app-faint)">{{ str(r.help) }}</p>
     </template>
 
-    <textarea
+    <KitTextarea
       v-else-if="t === 'textarea'"
       v-model="text"
-      maxlength="500"
-      rows="3"
-      :class="FIELD"
-      class="h-auto py-2"
-      :disabled="disabled"
+      :label="label || undefined"
       :placeholder="str(r.placeholder)"
-      @change="set(text)"
+      :disabled="disabled"
+      :required="on('required')"
+      :max-length="num('maxLength', 500)"
+      :helper-text="help"
+      resize="vertical"
+      @blur="set(text)"
     />
 
-    <select
+    <KitSelectWrapper
       v-else-if="t === 'select'"
-      :class="FIELD"
+      v-model="selected"
+      :label="label || undefined"
+      :placeholder="str(r.placeholder, 'Select…')"
       :disabled="disabled"
-      @change="pick(($event.target as HTMLSelectElement).value)"
+      :multiple="on('multiple')"
+      :clearable="on('clearable')"
+      :required="on('required')"
+      :helper-text="help"
+      :size="size"
+      @update:model-value="set($event)"
     >
-      <option value="">{{ str(r.placeholder, 'Select…') }}</option>
-      <option v-for="o in opts" :key="o">{{ o }}</option>
-    </select>
+      <KitSelectItem v-for="o in opts" :key="o" :value="o">{{ o }}</KitSelectItem>
+    </KitSelectWrapper>
 
-    <div v-else-if="t === 'checkbox' || t === 'radio'" class="flex flex-wrap gap-x-4 gap-y-2">
-      <label v-for="o in opts" :key="o" class="inline-flex cursor-pointer items-center gap-2 text-[13px]">
-        <input
-          :type="t === 'radio' ? 'radio' : 'checkbox'"
-          :name="block.id"
-          class="size-4 accent-(--app-accent)"
-          :disabled="disabled"
-          :checked="picked.includes(o)"
-          @change="t === 'radio' ? pick(o) : toggle(o)"
-        />{{ o }}
-      </label>
-    </div>
+    <fieldset v-else-if="t === 'checkbox' || t === 'radio'" class="m-0 min-w-0 border-0 p-0">
+      <legend v-if="label" class="mb-2 p-0 text-[12.5px] font-semibold text-(--app-fg-2)">{{ label }}</legend>
+      <div class="flex flex-wrap gap-x-4 gap-y-2">
+        <label v-for="o in opts" :key="o" class="inline-flex cursor-pointer items-center gap-2 text-[13px]">
+          <KitCheckbox
+            v-if="t === 'checkbox'"
+            :model-value="picked.includes(o)"
+            :disabled="disabled"
+            @update:model-value="toggle(o)"
+          />
+          <input
+            v-else
+            type="radio"
+            :name="block.id"
+            class="size-4 accent-(--app-accent)"
+            :disabled="disabled"
+            :checked="picked.includes(o)"
+            @change="pick(o)"
+          />{{ o }}
+        </label>
+      </div>
+    </fieldset>
 
     <label v-else-if="t === 'switch'" class="flex cursor-pointer items-center gap-3">
-      <button
-        type="button"
-        role="switch"
-        :aria-checked="on"
-        :disabled="disabled"
-        class="relative h-5 w-9 shrink-0 rounded-full transition-colors"
-        :class="on ? 'bg-(--app-accent)' : 'bg-(--app-line)'"
-        @click.stop="((on = !on), set(on))"
-      >
-        <span
-          class="absolute top-0.5 size-4 rounded-full bg-white shadow transition-all"
-          :class="on ? 'left-[18px]' : 'left-0.5'"
-        />
-      </button>
+      <KitSwitch v-model="checked" :disabled="disabled" @update:model-value="set($event)" />
       <span class="min-w-0">
         <span class="block text-[13px] font-semibold">{{ label || 'Switch' }}</span>
         <span v-if="r.text" class="block text-[12px] text-(--app-muted)">{{ str(r.text) }}</span>
       </span>
-      <span class="ml-auto text-[12px] text-(--app-faint)">{{ on ? 'On' : 'Off' }}</span>
     </label>
 
-    <label v-else-if="t === 'date'" class="relative block">
-      <CalendarDays
-        :size="14"
-        class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-(--app-faint)"
-      />
-      <input
-        type="date"
-        :class="FIELD"
-        class="pl-8"
+    <template v-else-if="t === 'date'">
+      <KitDateRangePicker
+        v-if="variant === 'range'"
+        v-model="date"
+        :label="label || undefined"
+        :placeholder="str(r.placeholder, 'Pick dates')"
         :disabled="disabled"
-        @change="set(($event.target as HTMLInputElement).value)"
+        :helper-text="help"
+        :locale="locale"
+        @update:model-value="set($event)"
       />
-    </label>
+      <KitDatePicker
+        v-else
+        v-model="date"
+        :label="label || undefined"
+        :placeholder="str(r.placeholder, 'Pick a date')"
+        :disabled="disabled"
+        :required="on('required')"
+        :time="on('time')"
+        :helper-text="help"
+        :locale="locale"
+        @update:model-value="set($event)"
+      />
+    </template>
 
-    <div v-else-if="t === 'upload'">
-      <div
-        class="flex flex-col items-center gap-1 rounded-(--app-radius-lg) border border-dashed border-(--app-line) bg-(--app-subtle) px-4 py-5 text-center"
-      >
-        <Upload :size="18" class="text-(--app-accent)" />
-        <span class="text-[13px] font-semibold"
-          >Drop files here or <span class="text-(--app-accent)">browse</span></span
-        >
-        <span class="text-[11.5px] text-(--app-faint)">JPG, PNG or PDF · up to 20 MB</span>
+    <template v-else-if="t === 'upload'">
+      <KitImageUpload
+        v-if="variant === 'image'"
+        v-model="image"
+        :label="label || 'Photo'"
+        :accept="str(r.accept, 'image/*')"
+        :max-size="num('maxSizeMb', 5) * 1024 * 1024"
+        :disabled="disabled"
+        :helper-text="help"
+        @update:model-value="set($event)"
+      />
+      <KitInputFileUpload
+        v-else-if="variant === 'field'"
+        v-model="files"
+        :label="label || undefined"
+        :placeholder="str(r.placeholder, 'Choose files')"
+        :accept="str(r.accept) || undefined"
+        :multiple="on('multiple', true)"
+        :max-size="num('maxSizeMb', 10) * 1024 * 1024"
+        :disabled="disabled"
+        :helper-text="help"
+        @update:model-value="set($event)"
+      />
+      <KitFileUpload
+        v-else
+        v-model="files"
+        :label="label || 'Files'"
+        :placeholder="str(r.placeholder, 'Choose files')"
+        :accept="str(r.accept) || undefined"
+        :multiple="on('multiple', true)"
+        :max-size="num('maxSizeMb', 10) * 1024 * 1024"
+        :disabled="disabled"
+        :helper-text="help"
+        @update:model-value="set($event)"
+      />
+    </template>
+
+    <div v-else-if="t === 'segmented'" class="min-w-0">
+      <div v-if="label" class="mb-1.5 text-[12.5px] font-semibold text-(--app-fg-2)">{{ label }}</div>
+      <KitMultiselectButton
+        v-model="picked"
+        :options="segments"
+        :multiple="on('multiple')"
+        :outlined="on('outlined', true)"
+        :variant="kitVariant(r.variant)"
+        :size="str(r.size, 'medium')"
+        @update:model-value="set($event)"
+      />
+    </div>
+
+    <div v-else-if="t === 'richtext'" class="min-w-0">
+      <div v-if="label" class="mb-1.5 text-[12.5px] font-semibold text-(--app-fg-2)">
+        {{ label }}<span v-if="on('required')" class="text-(--app-danger-fg)"> *</span>
       </div>
-      <div
-        v-for="(f, i) in files"
-        :key="f"
-        class="mt-2 flex items-center gap-2 rounded-(--app-radius) border border-(--app-line) px-3 py-2 text-[12.5px]"
-      >
-        <Paperclip :size="13" class="text-(--app-faint)" />{{ f }}
-        <button
-          type="button"
-          class="ml-auto text-(--app-faint) hover:text-(--app-fg)"
-          aria-label="Remove file"
-          :disabled="disabled"
-          @click.stop="files.splice(i, 1)"
-        >
-          <X :size="13" />
-        </button>
-      </div>
+      <KitRichTextEditor
+        v-model="html"
+        :readonly="r.mode === 'read'"
+        :disabled="disabled"
+        :placeholder="str(r.placeholder)"
+        :min-height="num('minHeight', 140)"
+        :aria-label="label || 'Rich text'"
+        :required="on('required')"
+        @update:model-value="set($event)"
+      />
     </div>
   </div>
 </template>

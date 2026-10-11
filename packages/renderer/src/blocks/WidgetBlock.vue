@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** Calendar, progress, timeline, tabs, steps, alert and pagination (Platon UI Kit). */
+/** Calendar, progress, timeline, steps, alert and pagination (full pagination is the Platon UI Kit's). */
 import { computed, ref } from 'vue'
 import {
   ChevronLeft,
@@ -11,6 +11,7 @@ import {
   X,
   Check,
 } from 'lucide-vue-next'
+import { KitTablePagination } from '../kit'
 import { type BlockProps, CARD, list, str, tr, useResolved } from './props'
 import { monthGrid, MONTH_NAMES } from '../calendar'
 import { tableOf } from '../format'
@@ -70,21 +71,15 @@ const timeline = [
   ['System', 'flagged WO-1031 as overdue', 'Yesterday', 'danger'],
 ] as const
 
-// tabs / steps
-const tabs = computed(() => {
-  const l = list(r.value.tabs)
-  return l.length ? l : ['Details', 'Parts', 'Photos']
-})
-const tab = ref(0)
+// steps
 const steps = computed(() => {
   const l = list(r.value.steps)
   return l.length ? l : ['Requested', 'Scheduled', 'In progress', 'Done']
 })
 const step = ref(Number(r.value.current ?? 2))
-function go(i: number, kind: 'tab' | 'step') {
-  if (kind === 'tab') tab.value = i
-  else step.value = Math.max(0, Math.min(steps.value.length - 1, i))
-  emit('event', 'change', i)
+function go(i: number) {
+  step.value = Math.max(0, Math.min(steps.value.length - 1, i))
+  emit('event', 'change', step.value)
 }
 
 // alert
@@ -105,22 +100,10 @@ const alert = computed(
 )
 
 // pagination
-const size = ref(Number(r.value.pageSize) || 10)
+const size = computed(() => Number(r.value.pageSize) || 10)
 const total = computed(() => Number(r.value.total) || 128)
 const pages = computed(() => Math.max(1, Math.ceil(total.value / size.value)))
 const page = ref(1)
-const nums = computed(() => {
-  const c = page.value
-  const set = [...new Set([1, c - 1, c, c + 1, pages.value].filter((n) => n >= 1 && n <= pages.value))].sort(
-    (a, b) => a - b,
-  )
-  const out: (number | null)[] = []
-  set.forEach((n, i) => {
-    if (i && n - set[i - 1]! > 1) out.push(null)
-    out.push(n)
-  })
-  return out
-})
 function goPage(n: number) {
   page.value = Math.max(1, Math.min(pages.value, n))
   emit('event', 'change', page.value)
@@ -239,25 +222,6 @@ function goPage(n: number) {
     </ol>
   </div>
 
-  <!-- tabs -->
-  <div v-else-if="t === 'tabs'" :class="CARD">
-    <div class="flex gap-1 border-b border-(--app-line) px-3">
-      <button
-        v-for="(l, i) in tabs"
-        :key="l"
-        type="button"
-        class="-mb-px border-b-2 px-3 py-2.5 text-[13px] font-semibold"
-        :class="i === tab ? 'border-(--app-accent) text-(--app-fg)' : 'border-transparent text-(--app-muted)'"
-        @click.stop="go(i, 'tab')"
-      >
-        {{ l }}
-      </button>
-    </div>
-    <div class="p-4 text-[13px] text-(--app-muted)">
-      {{ tabs[tab] }} — {{ str(r.panelText, 'Content for this tab.') }}
-    </div>
-  </div>
-
   <!-- steps -->
   <div v-else-if="t === 'steps'" :class="CARD" class="p-4">
     <div class="flex items-center">
@@ -289,7 +253,7 @@ function goPage(n: number) {
         type="button"
         class="h-8 rounded-(--app-radius) border border-(--app-line) px-3 text-[12.5px] font-semibold disabled:opacity-40"
         :disabled="step === 0"
-        @click.stop="go(step - 1, 'step')"
+        @click.stop="go(step - 1)"
       >
         Back
       </button>
@@ -297,7 +261,7 @@ function goPage(n: number) {
         type="button"
         class="h-8 rounded-(--app-radius) bg-(--app-accent) px-3 text-[12.5px] font-bold text-(--app-accent-fg) disabled:opacity-40"
         :disabled="step >= steps.length - 1"
-        @click.stop="go(step + 1, 'step')"
+        @click.stop="go(step + 1)"
       >
         Next step
       </button>
@@ -335,12 +299,18 @@ function goPage(n: number) {
     </button>
   </div>
 
-  <!-- pagination -->
+  <!-- pagination: full = Platon UI Kit -->
+  <div v-else-if="r.variant !== 'simple'" class="pk text-[12.5px]">
+    <KitTablePagination
+      :page="page"
+      :page-size="size"
+      :total="total"
+      :summary="`${(page - 1) * size + 1}–${Math.min(page * size, total)} of ${total}`"
+      @page-change="goPage"
+    />
+  </div>
   <div v-else class="flex flex-wrap items-center gap-3 text-[12.5px]">
-    <span v-if="r.variant !== 'simple'" class="text-(--app-muted)"
-      >{{ (page - 1) * size + 1 }}–{{ Math.min(page * size, total) }} of {{ total }}</span
-    >
-    <span v-else class="text-(--app-muted)">Page {{ page }} of {{ pages }}</span>
+    <span class="text-(--app-muted)">Page {{ page }} of {{ pages }}</span>
     <div class="ml-auto flex items-center gap-1">
       <button
         type="button"
@@ -351,24 +321,6 @@ function goPage(n: number) {
       >
         <ChevronLeft :size="14" />
       </button>
-      <template v-if="r.variant !== 'simple'">
-        <template v-for="(n, i) in nums" :key="i">
-          <span v-if="n === null" class="px-1 text-(--app-faint)">…</span>
-          <button
-            v-else
-            type="button"
-            class="h-8 min-w-8 rounded-(--app-radius) border px-2 font-semibold"
-            :class="
-              n === page
-                ? 'border-(--app-accent) bg-(--app-accent) text-(--app-accent-fg)'
-                : 'border-(--app-line)'
-            "
-            @click.stop="goPage(n)"
-          >
-            {{ n }}
-          </button>
-        </template>
-      </template>
       <button
         type="button"
         class="grid size-8 place-items-center rounded-(--app-radius) border border-(--app-line) disabled:opacity-40"
@@ -378,14 +330,6 @@ function goPage(n: number) {
       >
         <ChevronRight :size="14" />
       </button>
-      <select
-        v-if="r.variant !== 'simple'"
-        v-model.number="size"
-        class="ml-2 h-8 rounded-(--app-radius) border border-(--app-line) bg-(--app-surface) px-2"
-        @click.stop
-      >
-        <option v-for="s in [10, 25, 50]" :key="s" :value="s">{{ s }} / page</option>
-      </select>
     </div>
   </div>
 </template>

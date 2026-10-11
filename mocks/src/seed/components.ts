@@ -3,7 +3,7 @@
  * "Studio AI" generator used by `POST /components:generate`. Sources are kept in sync with the
  * `components` entries of the FieldOps definition so they open as "in sync".
  */
-import type { ComponentProp, CustomComponent, SandboxFile } from '@platon/definition'
+import type { CommunityComponent, ComponentProp, CustomComponent, SandboxFile } from '@platon/definition'
 
 export interface SandboxEntry extends SandboxFile {
   content: string
@@ -301,5 +301,160 @@ export function generateComponent(
       status: 'needs_review',
     },
     source,
+  }
+}
+
+// ── Community catalog ──────────────────────────────────────────────────────────────────────────
+
+const str = (name: string, label: string, def: string): ComponentProp => ({
+  name,
+  label,
+  type: 'String',
+  input: 'text',
+  required: false,
+  default: def,
+})
+const color = (def: string): ComponentProp => ({
+  name: 'accent',
+  label: 'Accent colour',
+  type: 'String',
+  input: 'color',
+  required: false,
+  default: def,
+})
+
+interface CommunityEntry extends CommunityComponent {
+  template: string[]
+  style: string[]
+}
+
+const COMMUNITY: CommunityEntry[] = [
+  {
+    id: 'community:status_timeline',
+    name: 'StatusTimeline',
+    description: 'Vertical history of status changes with who and when.',
+    author: 'Platon Labs',
+    installs: 1840,
+    tags: ['timeline', 'history', 'audit'],
+    props: [
+      str('title', 'Title', 'History'),
+      { name: 'items', label: 'Entries', type: 'Array', input: 'source', required: true },
+      color('#4f5bea'),
+    ],
+    events: ['select'],
+    template: [
+      '<template>',
+      '  <section class="status-timeline">',
+      '    <h3>{{ title }}</h3>',
+      '    <ol>',
+      `      <li v-for="item in items" :key="item.id" @click="emit('select', item)">`,
+      '        <strong>{{ item.status }}</strong> <small>{{ item.by }} · {{ item.at }}</small>',
+      '      </li>',
+      '    </ol>',
+      '  </section>',
+      '</template>',
+    ],
+    style: [
+      '.status-timeline ol { list-style: none; margin: 0; padding: 0 0 0 12px; border-left: 2px solid v-bind(accent); }',
+      '.status-timeline li { padding: 6px 0; cursor: pointer; }',
+    ],
+  },
+  {
+    id: 'community:rating_stars',
+    name: 'RatingStars',
+    description: 'Star rating input for feedback and quality checks.',
+    author: 'Aziz K.',
+    installs: 1203,
+    tags: ['rating', 'feedback', 'form'],
+    props: [
+      { name: 'value', label: 'Value', type: 'Number', input: 'number', required: false, default: 0 },
+      { name: 'max', label: 'Number of stars', type: 'Number', input: 'slider', required: false, default: 5 },
+      color('#f59e0b'),
+    ],
+    events: ['change'],
+    template: [
+      '<template>',
+      '  <div class="rating-stars">',
+      `    <button v-for="n in max" :key="n" :class="{ on: n <= value }" @click="emit('change', n)">★</button>`,
+      '  </div>',
+      '</template>',
+    ],
+    style: [
+      '.rating-stars button { border: 0; background: none; font-size: 20px; color: #cbd5e1; cursor: pointer; }',
+      '.rating-stars button.on { color: v-bind(accent); }',
+    ],
+  },
+  {
+    id: 'community:map_pin',
+    name: 'MapPin',
+    description: 'Static map card that shows an address with a pin.',
+    author: 'GeoTools',
+    installs: 742,
+    tags: ['map', 'address', 'location'],
+    props: [str('address', 'Address', 'Amir Temur 1, Tashkent'), str('label', 'Label', 'Site')],
+    events: ['open'],
+    template: [
+      '<template>',
+      `  <figure class="map-pin" @click="emit('open', address)">`,
+      '    <div class="map-pin__map">📍</div>',
+      '    <figcaption><strong>{{ label }}</strong> {{ address }}</figcaption>',
+      '  </figure>',
+      '</template>',
+    ],
+    style: [
+      '.map-pin { margin: 0; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb; cursor: pointer; }',
+      '.map-pin__map { height: 120px; display: grid; place-items: center; background: #e0f2fe; font-size: 28px; }',
+      '.map-pin figcaption { padding: 10px 12px; }',
+    ],
+  },
+  {
+    id: 'community:countdown',
+    name: 'Countdown',
+    description: 'Time left until a deadline, for SLAs and due dates.',
+    author: 'Platon Labs',
+    installs: 515,
+    tags: ['sla', 'deadline', 'timer'],
+    props: [str('label', 'Label', 'Due in'), str('until', 'Deadline (ISO date)', '2026-12-31')],
+    events: [],
+    template: [
+      '<template>',
+      '  <div class="countdown"><span>{{ label }}</span> <strong>{{ until }}</strong></div>',
+      '</template>',
+    ],
+    style: ['.countdown { padding: 12px 16px; border-radius: 10px; background: #f1f5f9; }'],
+  },
+]
+
+const publicEntry = ({ template: _t, style: _s, ...c }: CommunityEntry): CommunityComponent => c
+
+export function communityCatalog(q = ''): CommunityComponent[] {
+  const s = q.trim().toLowerCase()
+  return COMMUNITY.filter(
+    (c) => !s || `${c.name} ${c.description} ${c.tags.join(' ')}`.toLowerCase().includes(s),
+  ).map(publicEntry)
+}
+
+/** Copy of a community component for one project, renamed when the name is already taken. */
+export function installCommunity(
+  communityId: string,
+  taken: string[],
+): { component: CustomComponent; source: string } | null {
+  const c = COMMUNITY.find((x) => x.id === communityId)
+  if (!c) return null
+  let n = c.name
+  for (let i = 2; taken.includes(n); i++) n = `${c.name}${i}`
+  return {
+    component: {
+      id: `component:${snake(n)}`,
+      kind: 'vue-component',
+      name: n,
+      folder: 'components',
+      file: `src/components/${n}.vue`,
+      source: { type: 'code' },
+      props: c.props,
+      events: c.events,
+      status: 'reviewed',
+    },
+    source: sfc(c.template, c.props, c.events, c.style),
   }
 }

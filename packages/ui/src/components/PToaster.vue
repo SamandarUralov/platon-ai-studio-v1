@@ -40,10 +40,7 @@ const ICONS = { ok: CircleCheck, danger: CircleAlert, warn: TriangleAlert } as c
         <button
           v-if="t.action"
           class="ml-1 rounded-md px-2 py-0.5 font-bold text-primary-ring hover:bg-white/10"
-          @click="
-            t.action.run()
-            dismissToast(t.id)
-          "
+          @click="(t.action.run(), dismissToast(t.id))"
         >
           {{ t.action.label }}
         </button>

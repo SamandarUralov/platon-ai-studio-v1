@@ -39,6 +39,25 @@ export type BlockType =
   | 'steps'
   | 'alert'
   | 'pagination'
+  | 'container'
+  | 'section'
+  | 'grid'
+  | 'columns'
+  | 'accordion'
+  | 'spacer'
+  | 'badge'
+  | 'breadcrumb'
+  | 'empty'
+  | 'segmented'
+  | 'richtext'
+  | 'kpi'
+  | 'area'
+  | 'pie'
+  | 'hbar'
+  | 'stacked'
+  | 'gauge'
+  | 'funnel'
+  | 'scatter'
   | 'custom'
 /**
  * This interface was referenced by `AppDefinition`'s JSON-Schema
@@ -238,9 +257,21 @@ export interface Block {
    */
   ref: string
   /**
-   * Layout row; blocks with the same row sit side by side in array order.
+   * Layout row inside the page or the parent cell; blocks with the same row sit side by side in array order.
    */
   row: number
+  /**
+   * Id of the container block this block sits in (grid, columns, card, tabs, ...). Missing means the page itself.
+   */
+  parent?: string
+  /**
+   * Cell of the parent container (grid cell, column, tab, panel). Missing means 0.
+   */
+  slot?: number
+  /**
+   * Width in its row on a 12-column grid. Missing means an equal share of what the blocks with a span leave.
+   */
+  span?: number
   title?: string
   /**
    * Type-specific settings (source, columns, filter, variant, ...).

@@ -6,7 +6,7 @@
  */
 import { computed } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
-import { PanelLeftOpen, PanelRightOpen, PanelLeftClose } from 'lucide-vue-next'
+import { PanelLeftOpen, PanelRightOpen } from 'lucide-vue-next'
 import { useUiStore } from '@/stores/ui'
 import { kbd } from '@/composables/useShortcuts'
 
@@ -55,15 +55,6 @@ function startResize(side: 'left' | 'right', e: PointerEvent) {
         :style="{ width: `${ui.leftWidth}px` }"
       >
         <slot name="left" />
-        <button
-          type="button"
-          class="absolute bottom-2 right-2 grid size-7 place-items-center rounded-lg text-faint hover:bg-hover hover:text-fg"
-          :title="`Hide panel (${kbd('mod+,')})`"
-          aria-label="Hide left panel"
-          @click="ui.leftOpen = false"
-        >
-          <PanelLeftClose :size="15" />
-        </button>
         <div
           class="absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize"
           role="separator"

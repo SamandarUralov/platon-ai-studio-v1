@@ -182,10 +182,7 @@ const records = computed(() => m.count(props.table.id) ?? 0)
                 e.dataTransfer?.setData('text/plain', f.key)
               }
             "
-            @dragend="
-              dragKey = null
-              overIndex = null
-            "
+            @dragend="((dragKey = null), (overIndex = null))"
           >
             <GripVertical :size="14" />
           </span>

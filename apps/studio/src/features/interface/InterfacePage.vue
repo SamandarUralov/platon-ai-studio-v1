@@ -8,7 +8,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { FileQuestion } from 'lucide-vue-next'
 import { PEmptyState, PButton, toast } from '@platon/ui'
-import type { BlockType, CustomComponent, Page } from '@platon/definition'
+import { isContainer, type BlockType, type CustomComponent, type Page } from '@platon/definition'
 import LayerShell from '@/components/shell/LayerShell.vue'
 import { useDefinitionStore } from '@/stores/definition'
 import { useShortcuts } from '@/composables/useShortcuts'
@@ -51,8 +51,13 @@ function add(type: BlockType, component?: CustomComponent) {
   const p = page.value
   if (!p || !def.definition) return
   const b = createBlock(type, def.definition, p, component)
-  const target = ui.selected && p.blocks.some((x) => x.id === ui.selected) ? ui.selected : null
-  if (edits.addBlock(p, b, target, 'after')) {
+  const sel = p.blocks.find((x) => x.id === ui.selected)
+  // A selected container takes the new block into its first cell; otherwise it goes below.
+  const ok =
+    sel && isContainer(sel.type)
+      ? edits.addBlock(p, b, null, 'after', { parent: sel.id, slot: 0 })
+      : edits.addBlock(p, b, sel?.id ?? null, 'after')
+  if (ok) {
     ui.select(b.id)
     toast(t('interface.added', { block: b.title ?? b.ref }), { tone: 'ok' })
   }

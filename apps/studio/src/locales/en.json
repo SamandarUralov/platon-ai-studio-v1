@@ -1,5 +1,7 @@
 {
-  "app": { "name": "Platon AI Studio" },
+  "app": {
+    "name": "Platon AI Studio"
+  },
   "nav": {
     "interface": "Interface",
     "logic": "Logic",
@@ -74,5 +76,13 @@
     "draft": "Draft my app",
     "yourApps": "Your apps",
     "duplicate": "Duplicate app"
+  },
+  "sandbox": {
+    "title": "App sandbox",
+    "connecting": "Connecting to the sandbox…",
+    "unavailable": "The sandbox isn't reachable",
+    "version": "The sandbox speaks a different protocol version",
+    "hint": "The app renders in the Platon Sandbox at {url}. Start it (npm run dev in platon-sandbox) and try again.",
+    "retry": "Try again"
   }
 }

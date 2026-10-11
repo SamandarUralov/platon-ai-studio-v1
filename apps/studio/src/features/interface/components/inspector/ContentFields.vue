@@ -15,12 +15,13 @@ import {
   PSwitch,
   PTextarea,
 } from '@platon/ui'
-import { BLOCKS, type Block, type ComponentProp, type Page } from '@platon/definition'
-import { STATS } from '@platon/renderer'
+import { BLOCKS, CHART_TYPES, type Block, type ComponentProp, type Page } from '@platon/definition'
+import { KIT_PACKAGE, STATS } from '@platon/renderer'
 import { useDefinitionStore } from '@/stores/definition'
 import { projectLinks, useProjectId } from '@/composables/useProject'
 import { useInterfaceEdits } from '../../composables/useInterfaceEdits'
 import ChipToggle from './ChipToggle.vue'
+import SchemaFields from './SchemaFields.vue'
 
 const props = defineProps<{ page: Page; block: Block }>()
 const { t } = useI18n()
@@ -33,6 +34,7 @@ const P = computed(() => props.block.props as Record<string, unknown>)
 const type = computed(() => props.block.type)
 const meta = computed(() => BLOCKS[type.value])
 const has = (...ts: Block['type'][]) => ts.includes(type.value)
+const isChart = computed(() => CHART_TYPES.includes(type.value))
 const str = (v: unknown) => (v === undefined || v === null ? '' : Array.isArray(v) ? v.join(', ') : String(v))
 
 function setProp(key: string, value: unknown, label: string) {
@@ -205,13 +207,24 @@ function setCustom(p: ComponentProp, v: unknown) {
     </template>
 
     <PField
-      v-if="!has('divider', 'text', 'stats', 'pagination', 'tabs', 'steps')"
+      v-if="!meta.noTitle && !has('text', 'stats', 'steps')"
       :label="
         has('header')
           ? t('interface.f.heading')
           : has('button')
             ? t('interface.f.buttonName')
-            : has('input', 'select', 'checkbox', 'radio', 'switch', 'date', 'textarea', 'upload')
+            : has(
+                  'input',
+                  'select',
+                  'checkbox',
+                  'radio',
+                  'switch',
+                  'date',
+                  'textarea',
+                  'upload',
+                  'segmented',
+                  'richtext',
+                )
               ? t('interface.f.label')
               : t('interface.f.title')
       "
@@ -284,10 +297,10 @@ function setCustom(p: ComponentProp, v: unknown) {
       >{{ meta.label }}
       <a
         class="ml-auto inline-flex items-center gap-1 font-semibold text-primary-strong hover:underline"
-        href="https://storybook.platon.app"
+        :href="`https://www.npmjs.com/package/${KIT_PACKAGE}`"
         target="_blank"
         rel="noopener"
-        >Storybook<ExternalLink :size="11"
+        >npm<ExternalLink :size="11"
       /></a>
     </div>
     <PField v-if="variantOptions.length" :label="t('interface.f.variant')">
@@ -310,7 +323,7 @@ function setCustom(p: ComponentProp, v: unknown) {
       ><PInput :id="id" v-model="buf.text" @change="setProp('text', buf.text, t('interface.f.textChanged'))"
     /></PField>
     <PField
-      v-if="has('select', 'radio', 'checkbox')"
+      v-if="has('select', 'radio', 'checkbox', 'segmented')"
       :label="t('interface.f.options')"
       :hint="t('interface.f.commaHint')"
       v-slot="{ id }"
@@ -358,9 +371,11 @@ function setCustom(p: ComponentProp, v: unknown) {
       /></PField>
     </div>
 
+    <SchemaFields v-if="meta.fields?.length" :page="page" :block="block" :fields="meta.fields" />
+
     <!-- data -->
     <PField
-      v-if="has('table', 'form', 'list', 'detail', 'bar', 'line', 'donut', 'calendar')"
+      v-if="isChart || has('table', 'form', 'list', 'detail', 'calendar', 'kpi')"
       :label="t('interface.f.source')"
     >
       <PSelect
@@ -380,7 +395,7 @@ function setCustom(p: ComponentProp, v: unknown) {
         @update:model-value="setProp('columns', $event, t('interface.f.columnsChanged'))"
       />
     </PField>
-    <PField v-if="has('bar', 'line', 'donut') && table" :label="t('interface.f.groupBy')">
+    <PField v-if="isChart && type !== 'scatter' && table" :label="t('interface.f.groupBy')">
       <PSelect
         :model-value="str(P.groupBy)"
         :options="fieldOptions"

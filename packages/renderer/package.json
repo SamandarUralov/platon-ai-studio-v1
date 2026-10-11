@@ -4,12 +4,14 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./vite": "./vite/kitCss.ts"
   },
   "scripts": {
     "typecheck": "vue-tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
+    "@platon-rs/platon-ui-kit": "0.3.4",
     "@platon/definition": "workspace:*",
     "@platon/ui": "workspace:*",
     "lucide-vue-next": "^1.0.0",

@@ -1,24 +1,18 @@
 <script setup lang="ts">
 /**
  * Preview (F10): the whole app as a chosen role, with Development records, the app's languages and
- * viewport sizes. Page scripts run in a Worker sandbox; their ctx.log output feeds the Code console.
+ * viewport sizes. The app runs in the Platon Sandbox iframe (Preview mode, mock data); its console
+ * output and errors feed the Code console.
  */
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useLocalStorage, usePreferredDark, useResizeObserver } from '@vueuse/core'
-import { Lock, PenTool, RotateCcw, ShieldCheck, SquareTerminal } from 'lucide-vue-next'
+import { PenTool, RotateCcw, ShieldCheck, SquareTerminal } from 'lucide-vue-next'
 import { PButton, PSegmented, PSelect } from '@platon/ui'
-import type { Block } from '@platon/definition'
-import {
-  AppFrame,
-  canOpenPage,
-  PageView,
-  statsSource,
-  useScriptLogs,
-  type RenderContext,
-} from '@platon/renderer'
-import CustomComponentPreview from '@/features/components/CustomComponentPreview.vue'
+import { canOpenPage, statsSource, useScriptLogs } from '@platon/renderer'
+import SandboxFrame from '@/components/sandbox/SandboxFrame.vue'
+import { toSandboxMeta } from '@/services/sandbox/meta'
 import ViewportPopover from '@/features/interface/components/ViewportPopover.vue'
 import { tablesFor, useTableRecords } from '@/features/interface/api'
 import { useInterfaceStore } from '@/features/interface/store'
@@ -26,7 +20,6 @@ import { fitZoom } from '@/features/interface/lib/viewport'
 import { useDefinitionStore } from '@/stores/definition'
 import { useSessionStore } from '@/stores/session'
 import { projectLinks, useProjectId } from '@/composables/useProject'
-import { usePreviewRuntime } from './usePreviewRuntime'
 import { activeRules } from './rules'
 
 const { t } = useI18n()
@@ -70,7 +63,6 @@ const pageId = computed(() =>
   route.params.pageId ? String(route.params.pageId) : (visiblePages.value[0]?.id ?? pages.value[0]?.id),
 )
 const page = computed(() => pages.value.find((p) => p.id === pageId.value))
-const allowed = computed(() => !!page.value && canOpenPage(page.value, role.value))
 
 // viewport
 const width = useLocalStorage('platon.previewWidth', 1440)
@@ -82,41 +74,31 @@ const available = ref(1200)
 useResizeObserver(stage, (e) => (available.value = e[0]!.contentRect.width))
 const z = computed(() => (zoom.value === 'fit' ? fitZoom(width.value, available.value, 40) : zoom.value))
 
-// data
+// data: every page's tables, since the Sandbox navigates between pages on its own
 const tableIds = computed(() => {
-  const ids = new Set(tablesFor(page.value, statsSource(definition.value)))
-  return [...ids]
+  const stats = statsSource(definition.value)
+  return [...new Set(pages.value.flatMap((p) => tablesFor(p, stats)))]
 })
 const records = useTableRecords(pid, tableIds)
-const query = ref<Record<string, string>>({})
-const params = ref<Record<string, string>>({})
-const rt = computed(() => ({ path: page.value?.route ?? '/', params: params.value, query: query.value }))
+const meta = computed(
+  () =>
+    toSandboxMeta(definition.value, {
+      records: records.value,
+      lang: lang.value,
+      prefersDark: prefersDark.value,
+      viewer: user.value.name,
+    }).meta,
+)
 
-function navigate(id: string, p: Record<string, string> = {}) {
-  params.value = p
+function navigate(id: string) {
   void router.push(projectLinks(pid.value).preview(id))
 }
-const { runtime, restart } = usePreviewRuntime({
-  definition,
-  page,
-  role,
-  user,
-  records,
-  route: rt,
-  navigate,
-  projectId: pid,
-})
+/** Remounts the Sandbox: page state, lifecycle and data start over. */
+const run = ref(0)
+const restart = () => run.value++
 
-const ctx = computed<RenderContext>(() => ({
-  definition: definition.value,
-  records: records.value,
-  viewer: { role: role.value, name: user.value.name, vars: { region: 'North' } },
-  lang: lang.value,
-  overrides: runtime.overrides.value,
-}))
-
-function onEvent(b: Block, name: string, arg: unknown) {
-  runtime.emit(b.ref, name, arg)
+function onLog(e: { level: 'log' | 'info' | 'warn' | 'error'; text: string; src?: string }) {
+  if (page.value) logs.push({ pageId: page.value.id, ...e, role: user.value.role })
 }
 
 const rules = computed(() => (page.value ? activeRules(definition.value, page.value, role.value, t) : []))
@@ -187,34 +169,17 @@ function openConsole() {
           class="h-[calc((100vh_-_200px)/var(--z))] min-h-[560px] overflow-hidden rounded-[14px] border border-line shadow-card"
           :style="{ '--z': z }"
         >
-          <AppFrame
-            :definition="definition"
+          <SandboxFrame
+            :key="run"
+            :meta="meta"
+            mode="preview"
+            data="mock"
             :page-id="pageId"
             :role="role"
-            :width="width"
-            :lang="lang"
-            :user="user"
-            :prefers-dark="prefersDark"
-            fill
-            @navigate="navigate($event)"
-            @lang="lang = $event"
-          >
-            <PageView v-if="page && allowed" :page="page" :ctx="ctx" @event="onEvent">
-              <template #custom="{ block }">
-                <CustomComponentPreview
-                  :component="definition.components.find((c) => c.id === block.component)"
-                  :values="block.props as Record<string, unknown>"
-                />
-              </template>
-            </PageView>
-            <div v-else class="grid h-full min-h-80 place-items-center text-center">
-              <div>
-                <Lock :size="28" class="mx-auto text-(--app-faint)" />
-                <p class="mt-3 text-[15px] font-bold">{{ t('preview.noAccess', { role: roleName }) }}</p>
-                <p class="text-[13px] text-(--app-muted)">{{ t('preview.noAccessHint') }}</p>
-              </div>
-            </div>
-          </AppFrame>
+            @page="navigate"
+            @role="(r) => r && (role = r)"
+            @log="onLog"
+          />
         </div>
       </div>
     </div>

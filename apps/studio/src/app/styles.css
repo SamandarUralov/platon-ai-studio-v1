@@ -1,3 +1,5 @@
+/* Platon UI Kit styles sit below Tailwind's layers (see packages/renderer/vite/kitCss.ts). */
+@layer platon-kit;
 @import 'tailwindcss';
 @import '@platon/ui/styles.css';
 

@@ -12,6 +12,7 @@ import SectionLabel from '@/components/common/SectionLabel.vue'
 import { fmtBytes } from '@/composables/format'
 import { projectLinks } from '@/composables/useProject'
 import { isNearFull, missingCredentials, PURPOSES } from '../utils'
+import HideLeftPanel from '@/components/shell/HideLeftPanel.vue'
 
 const props = defineProps<{
   projectId: string
@@ -41,8 +42,8 @@ function goBucket(sid: string, bucket: string) {
 </script>
 
 <template>
-  <PanelHeader :title="t('storage.title')" :sub="t('storage.navSub')" />
-  <div class="min-h-0 flex-1 overflow-y-auto px-2 pb-14 scroll-thin">
+  <PanelHeader :title="t('storage.title')" :sub="t('storage.navSub')"><HideLeftPanel /></PanelHeader>
+  <div class="min-h-0 flex-1 overflow-y-auto px-2 pb-3 scroll-thin">
     <div class="pt-2">
       <NavItem
         :label="t('storage.overview.nav')"

@@ -1,5 +1,5 @@
 /** Studio API contract — custom components: sandbox files, constructor sessions, AI generation (F14). */
-import type { CustomComponent } from '../generated/app-definition'
+import type { ComponentProp, CustomComponent } from '../generated/app-definition'
 
 /** One file in the project's component sandbox (the Vue source tree the Constructor edits). */
 export interface SandboxFile {
@@ -56,3 +56,28 @@ export interface GenerateComponentResponse {
   component: CustomComponent
   source: string
 }
+
+/** A Vue component another team published to the Platon community catalog. */
+export interface CommunityComponent {
+  /** Catalog id, e.g. `community:status_timeline`. Not a definition id. */
+  id: string
+  /** PascalCase; renamed on install if the project already has one with this name. */
+  name: string
+  description: string
+  author: string
+  installs: number
+  tags: string[]
+  props: ComponentProp[]
+  events: string[]
+}
+
+/** GET `/community/components?q=…` */
+export interface CommunityComponentsResponse {
+  items: CommunityComponent[]
+}
+
+/**
+ * POST `/projects/{id}/components/community/{communityId}/install` — the server copies the source into
+ * the project's sandbox; the client adds the returned metadata to the definition as a change.
+ */
+export type InstallCommunityComponentResponse = GenerateComponentResponse

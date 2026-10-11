@@ -35,5 +35,16 @@
     "loading": "Yuklanmoqda…",
     "retry": "Qayta urinish"
   },
-  "home": { "yourApps": "Ilovalaringiz", "draft": "Ilovani yarat" }
+  "home": {
+    "yourApps": "Ilovalaringiz",
+    "draft": "Ilovani yarat"
+  },
+  "sandbox": {
+    "title": "Ilova sandbox'i",
+    "connecting": "Sandbox'ga ulanmoqda…",
+    "unavailable": "Sandbox'ga ulanib bo'lmadi",
+    "version": "Sandbox boshqa protokol versiyasida ishlayapti",
+    "hint": "Ilova {url} manzilidagi Platon Sandbox'da render qilinadi. Uni ishga tushiring (platon-sandbox'da npm run dev) va qayta urinib ko'ring.",
+    "retry": "Qayta urinish"
+  }
 }

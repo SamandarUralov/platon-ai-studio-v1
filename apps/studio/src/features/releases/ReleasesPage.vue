@@ -36,6 +36,7 @@ import ChangeList from './components/ChangeList.vue'
 import ReleaseDetail from './components/ReleaseDetail.vue'
 import PrepareReleaseDialog from './components/PrepareReleaseDialog.vue'
 import DeployProgress from './components/DeployProgress.vue'
+import HideLeftPanel from '@/components/shell/HideLeftPanel.vue'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -115,9 +116,9 @@ async function approve(e: EnvironmentState) {
 <template>
   <LayerShell :has-right="false">
     <template #left>
-      <PanelHeader :title="t('releases.title')" :sub="t('releases.sub')" />
+      <PanelHeader :title="t('releases.title')" :sub="t('releases.sub')"><HideLeftPanel /></PanelHeader>
       <SectionLabel :label="t('releases.versions')" :count="items.length" />
-      <div class="flex min-h-0 flex-1 flex-col gap-0.5 overflow-auto px-2 pb-12 scroll-thin">
+      <div class="flex min-h-0 flex-1 flex-col gap-0.5 overflow-auto px-2 pb-3 scroll-thin">
         <button
           type="button"
           class="rounded-lg px-2.5 py-2 text-left"

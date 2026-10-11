@@ -5,11 +5,15 @@
 import { useI18n } from 'vue-i18n'
 import {
   BLOCKS,
+  canPlaceIn,
+  cellOf,
+  descendantIds,
   getAt,
   newId,
   placeBlock,
   uniqueName,
   type Block,
+  type Cell,
   type DropSide,
   type LifecycleHandler,
   type Page,
@@ -51,23 +55,24 @@ export function useInterfaceEdits() {
     })
   }
 
-  function addBlock(page: Page, block: Block, target?: string | null, side: DropSide = 'after') {
+  /** Add next to `target` (joining its cell), or as the last row of `cell` / the page. */
+  function addBlock(page: Page, block: Block, target?: string | null, side: DropSide = 'after', cell?: Cell) {
     return setBlocks(
       page,
-      placeBlock(page.blocks, block, target, side),
+      placeBlock(page.blocks, block, target, side, cell),
       t('interface.change.addBlock', { block: title(block), page: page.name }),
       `interface.pages.${page.id}.blocks.${block.id}`,
     )
   }
 
-  function moveBlock(page: Page, id: string, target: string | null, side: DropSide) {
+  function moveBlock(page: Page, id: string, target: string | null, side: DropSide, cell?: Cell) {
     const b = page.blocks.find((x) => x.id === id)
     if (!b || id === target) return false
-    const next = placeBlock(page.blocks, b, target, side)
-    if (
-      JSON.stringify(next.map((x) => [x.id, x.row])) === JSON.stringify(page.blocks.map((x) => [x.id, x.row]))
-    )
-      return false
+    const to = target ? page.blocks.find((x) => x.id === target) : undefined
+    if (!canPlaceIn(page.blocks, id, to ? cellOf(to) : (cell ?? {}))) return false
+    const next = placeBlock(page.blocks, b, target, side, cell)
+    const shape = (bs: Block[]) => JSON.stringify(bs.map((x) => [x.id, x.row, x.parent, x.slot]))
+    if (shape(next) === shape(page.blocks)) return false
     return setBlocks(
       page,
       next,
@@ -76,18 +81,32 @@ export function useInterfaceEdits() {
     )
   }
 
+  /** Copy a block below its row; a container is copied with everything inside it. */
   function duplicateBlock(page: Page, block: Block) {
-    const copy: Block = {
-      ...structuredClone(block),
-      id: newId('blk'),
-      ref: uniqueName(
-        block.ref,
-        page.blocks.map((b) => b.ref),
-      ),
+    const refs = page.blocks.map((b) => b.ref)
+    const ids = new Map<string, string>()
+    const clone = (b: Block): Block => {
+      const id = newId('blk')
+      ids.set(b.id, id)
+      const ref = uniqueName(b.ref, refs)
+      refs.push(ref)
+      return { ...structuredClone(b), id, ref }
     }
-    const rows = page.blocks.filter((b) => b.row === block.row)
-    const last = rows[rows.length - 1]
-    addBlock(page, copy, last?.id ?? block.id, 'after')
+    const copy = clone(block)
+    const inner = page.blocks
+      .filter((b) => descendantIds(page.blocks, block.id).has(b.id))
+      .map((b) => clone(b))
+      .map((b) => ({ ...b, parent: ids.get(b.parent!) ?? b.parent }))
+    const siblings = page.blocks.filter(
+      (b) => b.row === block.row && b.parent === block.parent && (b.slot ?? 0) === (block.slot ?? 0),
+    )
+    const last = siblings[siblings.length - 1]
+    setBlocks(
+      page,
+      [...placeBlock(page.blocks, copy, last?.id ?? block.id, 'after'), ...inner],
+      t('interface.change.addBlock', { block: title(copy), page: page.name }),
+      `interface.pages.${page.id}.blocks.${copy.id}`,
+    )
     return copy
   }
 
@@ -98,7 +117,11 @@ export function useInterfaceEdits() {
       area: 'Pages',
       text: t('interface.change.deleteBlock', { block: title(block), page: page.name }),
       machinePath: `- ${key}`,
-      ops: [{ op: 'remove', path: blockPath(page.id, block.id) }],
+      // A container takes the blocks inside it along.
+      ops: [block.id, ...descendantIds(page.blocks, block.id)].map((id) => ({
+        op: 'remove' as const,
+        path: blockPath(page.id, id),
+      })),
     })
   }
 

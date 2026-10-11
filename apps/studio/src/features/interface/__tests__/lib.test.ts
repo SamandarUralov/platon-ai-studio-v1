@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { applyPatch, type AppDefinition, type Page } from '@platon/definition'
+import { applyPatch, type AppDefinition, type Block, type Page } from '@platon/definition'
 import { fieldopsDefinition, ORDERS_CODE } from '../../../../../../mocks/src/seed'
 import { ctxTypings, defaultScript, ensureHandler, parseOutline, signature } from '../lib/script'
 import { blockPath, setOps } from '../lib/patch'
-import { createBlock, paletteGroups, rowLabelOf } from '../lib/blocks'
+import { createBlock, layerTree, moveAbility, moveTarget, paletteGroups, rowLabelOf } from '../lib/blocks'
 import { fitZoom, stepZoom } from '../lib/viewport'
 
 const def: AppDefinition = fieldopsDefinition()
@@ -91,9 +91,34 @@ describe('blocks + viewport', () => {
     expect(createBlock('header', def, orders).ref).toBe('pageHeader2')
   })
   it('filters the palette', () => {
-    expect(paletteGroups('').length).toBe(5)
+    expect(paletteGroups('').length).toBe(6)
     const g = paletteGroups('kpi')
-    expect(g.flatMap((x) => x.items.map((i) => i.type))).toEqual(['stats'])
+    expect(g.flatMap((x) => x.items.map((i) => i.type))).toEqual(['stats', 'kpi'])
+    expect(paletteGroups('wrapper').flatMap((x) => x.items.map((i) => i.type))).toEqual(
+      expect.arrayContaining(['container', 'grid']),
+    )
+  })
+  it('lists nested blocks as an indented tree in canvas order', () => {
+    const blk = (id: string, extra: Partial<Block> = {}): Block => ({
+      id,
+      type: 'text',
+      ref: id,
+      row: 0,
+      props: {},
+      ...extra,
+    })
+    const blocks = [
+      blk('a', { parent: 'g', slot: 1 }),
+      blk('g', { type: 'columns', props: { ratio: '1:1' } }),
+      blk('b', { parent: 'g', slot: 0 }),
+      blk('z', { row: 1 }),
+    ]
+    expect(layerTree(blocks).map((l) => [l.block.id, l.depth, l.cell])).toEqual([
+      ['g', 0, undefined],
+      ['b', 1, 'Column 1'],
+      ['a', 1, 'Column 2'],
+      ['z', 0, undefined],
+    ])
   })
   it('numbers rows from 1', () => {
     expect(rowLabelOf(orders.blocks, orders.blocks[2]!.id)).toBe(3)
@@ -120,5 +145,43 @@ describe('lifecycle', async () => {
     const h = withFunction({ id: 'h', kind: 'function', fn: 'x', args: { status: "'done'" } }, fn)
     expect(h.args).toEqual({ order_id: '', status: "'done'" })
     expect(newHandler('code').kind).toBe('code')
+  })
+})
+
+describe('block toolbar moves', () => {
+  const b = (id: string, row: number, extra: Partial<Block> = {}): Block => ({
+    id,
+    type: 'text',
+    ref: id,
+    row,
+    props: {},
+    ...extra,
+  })
+  // a | (b c) | cols[ x y ]
+  const blocks: Block[] = [
+    b('a', 0),
+    b('b', 1),
+    b('c', 1),
+    b('cols', 2, { type: 'columns', props: { ratio: '1:1' } }),
+    b('x', 0, { parent: 'cols', slot: 0 }),
+    b('y', 1, { parent: 'cols', slot: 0 }),
+  ]
+
+  it('swaps within a row and steps over neighbouring rows', () => {
+    expect(moveTarget(blocks, 'b', 'right')).toEqual({ target: 'c', side: 'right' })
+    expect(moveTarget(blocks, 'c', 'left')).toEqual({ target: 'b', side: 'left' })
+    expect(moveTarget(blocks, 'a', 'down')).toEqual({ target: 'c', side: 'after' })
+    expect(moveTarget(blocks, 'a', 'up')).toBeNull()
+  })
+
+  it('leaves a shared row without targeting itself', () => {
+    expect(moveTarget(blocks, 'b', 'up')).toEqual({ target: 'c', side: 'before' })
+    expect(moveTarget(blocks, 'c', 'down')).toEqual({ target: 'b', side: 'after' })
+  })
+
+  it('stays inside the container cell', () => {
+    expect(moveAbility(blocks, 'x')).toEqual({ up: false, down: true, left: false, right: false })
+    expect(moveTarget(blocks, 'y', 'up')).toEqual({ target: 'x', side: 'before' })
+    expect(moveAbility(blocks, 'cols')).toMatchObject({ up: true, down: false })
   })
 })

@@ -9,6 +9,17 @@ export interface BlockProps {
   ctx: RenderContext
 }
 
+/** What a container hands to its `cell` slot for each of its cells. */
+export interface CellSlotProps {
+  slot: number
+  count: number
+  /** none | sm | md | lg */
+  gap: string
+  direction: 'column' | 'row'
+}
+
+export const GAP_CLASS: Record<string, string> = { none: 'gap-0', sm: 'gap-2', md: 'gap-4', lg: 'gap-6' }
+
 export type BlockEmit = (e: 'event', name: string, arg?: unknown) => void
 
 /** Loosely typed view of `block.props` + `title`, with page-code overrides on top. */

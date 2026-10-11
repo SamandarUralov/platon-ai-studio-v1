@@ -46,6 +46,16 @@ const TONES: Record<Exclude<AppTone, 'accent'>, [string, string, string, string]
   info: ['#dff1ff', '#1f6f99', '#15303f', '#7cc4ec'],
 }
 
+/**
+ * Categorical chart colours in fixed order (validated for colour-vision deficiency on both
+ * surfaces). Single-series charts use the app accent instead.
+ */
+const SERIES_LIGHT = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#4a3aa7', '#e34948']
+const SERIES_DARK = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300', '#9085e9', '#e66767']
+export const SERIES_COUNT = SERIES_LIGHT.length
+/** CSS colour of categorical slot `i`; a 9th series reuses no hue — callers fold extras into "Other". */
+export const seriesColor = (i: number): string => `var(--app-series-${Math.min(i, SERIES_COUNT - 1) + 1})`
+
 const RADIUS = { sharp: ['4px', '6px'], soft: ['10px', '14px'], round: ['16px', '22px'] } as const
 
 function hexToRgb(hex: string): [number, number, number] | null {
@@ -79,10 +89,13 @@ export function appThemeVars(theme: AppTheme | undefined, prefersDark = false): 
     '--app-accent-fg': '#ffffff',
     '--app-accent-tint': tint(accent, dark ? 0.28 : 0.12, dark),
     '--app-accent-soft': tint(accent, dark ? 0.45 : 0.32, dark),
+    // Platon UI Kit components read their primary colour as an "r g b" triplet.
+    '--pk-primary': hexToRgb(accent)!.join(' '),
     '--app-radius': r,
     '--app-radius-lg': rl,
     'color-scheme': dark ? 'dark' : 'light',
   }
+  ;(dark ? SERIES_DARK : SERIES_LIGHT).forEach((c, i) => (vars[`--app-series-${i + 1}`] = c))
   for (const [tone, [lb, lf, db, df]] of Object.entries(TONES)) {
     vars[`--app-${tone}-bg`] = dark ? db : lb
     vars[`--app-${tone}-fg`] = dark ? df : lf

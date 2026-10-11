@@ -14,6 +14,7 @@
   "mode": { "label": "Editor mode", "design": "Design", "code": "Code" },
   "group": {
     "layout": "Text & layout",
+    "containers": "Layout & containers",
     "data": "Data",
     "form": "Form controls",
     "charts": "Charts & calendar",
@@ -25,7 +26,18 @@
     "emptyPage": "No blocks yet. Drag one from below.",
     "search": "Search elements",
     "noMatch": "No elements match “{q}”. Try Studio AI for something custom.",
-    "custom": "Custom components",
+    "custom": "Custom",
+    "customHint": "This project’s components",
+    "community": "Community",
+    "group": "Element group",
+    "count": "{n} elements",
+    "communityHint": "Shared by other teams",
+    "noCommunity": "No community elements yet.",
+    "communityError": "Couldn’t load community elements. Try again later.",
+    "install": "Install",
+    "addToPage": "Add",
+    "installs": "{n} installs",
+    "installFailed": "Couldn’t install “{name}”",
     "new": "New",
     "askAi": "Ask Studio AI for a component",
     "noCustom": "None yet. Build one in the component constructor.",
@@ -79,6 +91,7 @@
       "right": "Place on the right"
     },
     "dropHere": "Drag a UI element here, or double-click one on the left",
+    "dropInCell": "Drop blocks here",
     "emptyPage": "This page is empty. Drag a UI element here, or double-click one on the left"
   },
   "right": {

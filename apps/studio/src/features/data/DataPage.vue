@@ -21,6 +21,7 @@ import FieldInspector from './components/FieldInspector.vue'
 import NewDatabaseDialog from './components/NewDatabaseDialog.vue'
 import NewTableDialog from './components/NewTableDialog.vue'
 import { provideDataModel } from './composables/useDataModel'
+import HideLeftPanel from '@/components/shell/HideLeftPanel.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -108,7 +109,8 @@ const aiContext = computed<AiContext | null>(() =>
       <PanelHeader
         :title="t('data.title')"
         :sub="t('data.summary', { c: m.connections.value.length, t: m.tables.value.length })"
-      />
+        ><HideLeftPanel
+      /></PanelHeader>
       <ConnectionList
         :conn-id="connId"
         :table-id="tableId"

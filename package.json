@@ -1,5 +1,5 @@
 {
-  "name": "platon-studio-frontend",
+  "name": "platon-ai-studio-v1",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.4.1",

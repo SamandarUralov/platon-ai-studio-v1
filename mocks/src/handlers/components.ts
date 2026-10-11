@@ -1,9 +1,11 @@
-/** Mock handlers — custom components: sandbox files, constructor sessions, AI generation (F14). */
+/** Mock handlers — custom components: sandbox files, constructor sessions, AI generation, community (F14). */
 import { http, type HttpHandler } from 'msw'
 import type {
+  CommunityComponentsResponse,
   ComponentSessionResponse,
   GenerateComponentRequest,
   GenerateComponentResponse,
+  InstallCommunityComponentResponse,
   SandboxFile,
   SandboxFileContent,
   SandboxFilesResponse,
@@ -11,7 +13,13 @@ import type {
 } from '@platon/definition'
 import { ext, persist } from '../db'
 import { api, body, fail, json, latency, withProject } from '../http'
-import { generateComponent, sandboxSeed, type SandboxEntry } from '../seed/components'
+import {
+  communityCatalog,
+  generateComponent,
+  installCommunity,
+  sandboxSeed,
+  type SandboxEntry,
+} from '../seed/components'
 
 const sandbox = (pid: string) => ext<SandboxEntry[]>(pid, 'componentSandbox', sandboxSeed)
 const meta = ({ content: _c, ...f }: SandboxEntry): SandboxFile => f
@@ -120,6 +128,35 @@ export const componentsHandlers: HttpHandler[] = [
         token: `cst_${pid}_${rnd}`,
         expiresAt: new Date(Date.now() + 5 * 60_000).toISOString(),
       })
+    })
+  }),
+
+  http.get(api('/community/components'), async ({ request }) => {
+    await latency(200)
+    const q = new URL(request.url).searchParams.get('q') ?? ''
+    return json<CommunityComponentsResponse>({ items: communityCatalog(q) })
+  }),
+
+  http.post(api('/projects/:id/components/community/:cid/install'), async ({ params }) => {
+    await latency(400)
+    return withProject(params.id, (p, pid) => {
+      // Unsaved installs only exist in the sandbox so far, so their file names count as taken too.
+      const taken = [
+        ...p.definition.components.map((c) => c.name),
+        ...sandbox(pid).map((f) => f.path.replace(/^.*\/|\.vue$/g, '')),
+      ]
+      const res = installCommunity(String(params.cid), taken)
+      if (!res) return fail(404, 'not_found', `Community component ${String(params.cid)} not found`)
+      sandbox(pid).push({
+        path: res.component.file,
+        componentId: res.component.id,
+        origin: 'code',
+        size: res.source.length,
+        updatedAt: new Date().toISOString(),
+        content: res.source,
+      })
+      persist()
+      return json<InstallCommunityComponentResponse>(res)
     })
   }),
 ]

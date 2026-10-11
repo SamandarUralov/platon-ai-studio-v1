@@ -1,6 +1,9 @@
 /** Page renderer shared by the Interface canvas, Preview and (later) the generated-app runtime. */
 export { default as BlockView } from './BlockView.vue'
 export { default as PageView } from './PageView.vue'
+export { default as BlockRows } from './BlockRows.vue'
+export type { CellSlotProps } from './blocks/props'
+export { KIT_PACKAGE } from './kit'
 export { default as AppFrame } from './AppFrame.vue'
 export * from './context'
 export * from './format'

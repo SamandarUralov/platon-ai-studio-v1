@@ -39,3 +39,35 @@ describe('scriptProblems', () => {
     expect(scriptProblems(page, 'definePage({ on: {', def, '/p').some((p) => p.code === 'syntax')).toBe(true)
   })
 })
+
+describe('nested blocks', () => {
+  const withBlocks = (blocks: unknown[]) => {
+    const def = fieldopsDefinition()
+    def.interface.pages[0]!.blocks = blocks as (typeof def.interface.pages)[0]['blocks']
+    return validateAll(def).filter((p) => p.code.startsWith('block_'))
+  }
+  const blk = (id: string, extra: Record<string, unknown> = {}) => ({
+    id,
+    type: 'text',
+    ref: id,
+    row: 0,
+    props: {},
+    ...extra,
+  })
+
+  it('accepts blocks inside a container cell', () => {
+    expect(
+      withBlocks([blk('g', { type: 'grid', props: { columns: 2 } }), blk('a', { parent: 'g', slot: 1 })]),
+    ).toEqual([])
+  })
+
+  it('flags missing parents, lost cells and loops', () => {
+    const codes = (bs: unknown[]) => withBlocks(bs).map((p) => p.code)
+    expect(codes([blk('a', { parent: 'nope' })])).toEqual(['block_parent'])
+    expect(codes([blk('t', { parent: 'a' }), blk('a', { parent: 't' })])).toContain('block_parent')
+    expect(codes([blk('g', { type: 'grid' }), blk('a', { parent: 'g', slot: 5 })])).toEqual(['block_slot'])
+    expect(
+      codes([blk('c', { type: 'container', parent: 'd' }), blk('d', { type: 'container', parent: 'c' })]),
+    ).toContain('block_cycle')
+  })
+})

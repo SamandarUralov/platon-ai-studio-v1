@@ -1,5 +1,13 @@
 /** Checks for pages, page scripts and lifecycle handlers (requirements §3.2.1). */
-import { BLOCKS, pointer, type AppDefinition, type Page, type Problem } from '@platon/definition'
+import {
+  BLOCKS,
+  isContainer,
+  pointer,
+  slotLabels,
+  type AppDefinition,
+  type Page,
+  type Problem,
+} from '@platon/definition'
 
 const BANNED: [RegExp, string][] = [
   [/\bfetch\s*\(/, 'fetch() is not available — call a Logic function with ctx.call()'],
@@ -141,7 +149,40 @@ export function validatePages(def: AppDefinition): Problem[] {
           path: pointer(...base, 'visibleTo'),
         })
     const refs = new Set<string>()
+    const byId = new Map(p.blocks.map((b) => [b.id, b]))
     for (const b of p.blocks) {
+      if (b.parent) {
+        const parent = byId.get(b.parent)
+        const at = pointer(...base, 'blocks', b.id, 'parent')
+        if (!parent || !isContainer(parent.type))
+          out.push({
+            severity: 'error',
+            code: 'block_parent',
+            message: `“${b.title ?? b.ref}” sits in a container that no longer exists`,
+            path: at,
+          })
+        else if ((b.slot ?? 0) >= slotLabels(parent).length)
+          out.push({
+            severity: 'warning',
+            code: 'block_slot',
+            message: `“${b.title ?? b.ref}” is in a cell “${parent.title ?? parent.ref}” no longer has; it shows in the last one`,
+            path: pointer(...base, 'blocks', b.id, 'slot'),
+          })
+        // A parent chain that loops back means the block can never render.
+        const seen = new Set([b.id])
+        for (let cur = parent; cur?.parent; cur = byId.get(cur.parent)) {
+          if (seen.has(cur.parent)) {
+            out.push({
+              severity: 'error',
+              code: 'block_cycle',
+              message: `“${b.title ?? b.ref}” is nested inside itself`,
+              path: at,
+            })
+            break
+          }
+          seen.add(cur.parent)
+        }
+      }
       if (refs.has(b.ref))
         out.push({
           severity: 'error',
