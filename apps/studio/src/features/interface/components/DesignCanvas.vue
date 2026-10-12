@@ -3,17 +3,27 @@
  * The design canvas: dotted background and the app at the chosen width and zoom. The app itself is
  * rendered by the Platon Sandbox in an iframe (Interface mode); selecting and dropping happen there
  * and come back as Sandbox events, which we turn into definition edits. The selected block's
- * quick actions are Studio chrome, drawn over the iframe at the rect the Sandbox reports.
+ * quick actions and its 12-column resize handle are Studio chrome, drawn over the iframe at the rect
+ * the Sandbox reports.
  * Zoom: ⌘+wheel (and ⌘+/−/0 via the page). Pan: hold Space (or the hand tool) and drag.
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useResizeObserver } from '@vueuse/core'
-import { canPlaceIn, type BlockType, type CustomComponent, type Page } from '@platon/definition'
+import {
+  canPlaceIn,
+  GRID_COLUMNS,
+  rowOf,
+  spanOf,
+  type BlockType,
+  type CustomComponent,
+  type Page,
+} from '@platon/definition'
 import { statsSource } from '@platon/renderer'
-import type { Rect, SandboxToStudio } from '@platon/bridge/sandbox'
+import type { SandboxToStudio } from '@platon/bridge/sandbox'
 import SandboxFrame from '@/components/sandbox/SandboxFrame.vue'
 import BlockToolbar from './BlockToolbar.vue'
+import BlockResizeHandle from './BlockResizeHandle.vue'
 import { ownerBlock, placementOf, toSandboxMeta } from '@/services/sandbox/meta'
 import { useDefinitionStore } from '@/stores/definition'
 import { useProjectId } from '@/composables/useProject'
@@ -21,7 +31,7 @@ import { useShortcuts } from '@/composables/useShortcuts'
 import { useInterfaceStore } from '../store'
 import { useInterfaceEdits } from '../composables/useInterfaceEdits'
 import { dragActive, takeLastDrag, type DragData } from '../composables/dnd'
-import { createBlock, moveAbility, moveTarget, type MoveDir } from '../lib/blocks'
+import { canResize, createBlock, handleShown, moveAbility, moveTarget, type MoveDir } from '../lib/blocks'
 import { deviceOf, fitZoom } from '../lib/viewport'
 import { tablesFor, useTableRecords } from '../api'
 
@@ -98,7 +108,7 @@ function onHover(id: string | null) {
 }
 
 // ── block toolbar ──────────────────────────────────────────────────────────
-const selRect = ref<{ blockId: string | null; rect: Rect | null }>({ blockId: null, rect: null })
+const selRect = ref<SandboxToStudio['block-rect']>({ blockId: null, rect: null })
 const selBlock = computed(() => props.page.blocks.find((b) => b.id === ui.selected))
 /** Only while the reported rect is for the block Studio has selected (not a stale one). */
 const toolbarRect = computed(() =>
@@ -111,6 +121,18 @@ const can = computed(() =>
     ? moveAbility(props.page.blocks, selBlock.value.id)
     : { up: false, down: false, left: false, right: false },
 )
+
+const sizing = computed(() => {
+  const b = selBlock.value
+  const rect = toolbarRect.value
+  if (!b || !rect || !canResize(props.page.blocks, b.id)) return null
+  const n = rowOf(props.page.blocks, b.id).length
+  if (!handleShown(rect, selRect.value.grid, n)) return null
+  return { span: spanOf(props.page.blocks, b.id), max: Math.max(1, GRID_COLUMNS - (n - 1)) }
+})
+function resizeSelected(span: number) {
+  if (selBlock.value) edits.resizeBlock(props.page, selBlock.value.id, span)
+}
 
 function moveSelected(dir: MoveDir) {
   const b = selBlock.value
@@ -177,6 +199,14 @@ function onDrop({ parentId, index, source }: SandboxToStudio['drop']) {
             @page="emit('go', $event)"
           />
         </div>
+        <BlockResizeHandle
+          v-if="toolbarRect && sizing && !dragActive"
+          :rect="toolbarRect"
+          :span="sizing.span"
+          :max="sizing.max"
+          :zoom="zoom"
+          @resize="resizeSelected"
+        />
         <BlockToolbar
           v-if="toolbarRect && !dragActive"
           :rect="toolbarRect"

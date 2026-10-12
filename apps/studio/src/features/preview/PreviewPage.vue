@@ -1,8 +1,9 @@
 <script setup lang="ts">
 /**
  * Preview (F10): the whole app as a chosen role, with Development records, the app's languages and
- * viewport sizes. The app runs in the Platon Sandbox iframe (Preview mode, mock data); its console
- * output and errors feed the Code console.
+ * viewport sizes. The app runs in the Platon Sandbox iframe (Preview mode, mock data); the page
+ * script and lifecycle run in the Studio's Worker sandbox (usePreviewRuntime) and act on the
+ * Sandbox through block events and patches. Console output and errors feed the Code console.
  */
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -21,6 +22,7 @@ import { useDefinitionStore } from '@/stores/definition'
 import { useSessionStore } from '@/stores/session'
 import { projectLinks, useProjectId } from '@/composables/useProject'
 import { activeRules } from './rules'
+import { usePreviewRuntime } from './usePreviewRuntime'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -80,22 +82,37 @@ const tableIds = computed(() => {
   return [...new Set(pages.value.flatMap((p) => tablesFor(p, stats)))]
 })
 const records = useTableRecords(pid, tableIds)
-const meta = computed(
-  () =>
-    toSandboxMeta(definition.value, {
-      records: records.value,
-      lang: lang.value,
-      prefersDark: prefersDark.value,
-      viewer: user.value.name,
-    }).meta,
-)
+// Lifecycle runs in the Studio's page runtime with the page script, not in the Sandbox.
+const metaOptions = computed(() => ({
+  records: records.value,
+  lang: lang.value,
+  prefersDark: prefersDark.value,
+  viewer: user.value.name,
+  lifecycle: false,
+}))
+const build = computed(() => toSandboxMeta(definition.value, metaOptions.value))
+const meta = computed(() => build.value.meta)
 
 function navigate(id: string) {
   void router.push(projectLinks(pid.value).preview(id))
 }
-/** Remounts the Sandbox: page state, lifecycle and data start over. */
+const script = usePreviewRuntime({
+  definition,
+  page,
+  role,
+  user,
+  records,
+  nodes: computed(() => build.value.nodes),
+  metaOptions,
+  navigate,
+  projectId: pid,
+})
+/** Remounts the Sandbox and restarts the page script: state, lifecycle and data start over. */
 const run = ref(0)
-const restart = () => run.value++
+function restart() {
+  run.value++
+  script.restart()
+}
 
 function onLog(e: { level: 'log' | 'info' | 'warn' | 'error'; text: string; src?: string }) {
   if (page.value) logs.push({ pageId: page.value.id, ...e, role: user.value.role })
@@ -176,6 +193,8 @@ function openConsole() {
             data="mock"
             :page-id="pageId"
             :role="role"
+            :patches="script.patches.value"
+            @block-event="script.onBlockEvent"
             @page="navigate"
             @role="(r) => r && (role = r)"
             @log="onLog"

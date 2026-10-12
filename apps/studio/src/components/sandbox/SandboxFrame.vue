@@ -23,6 +23,7 @@ import {
   type Rect,
   type SandboxDataMode,
   type SandboxMode,
+  type SandboxPatch,
   type SandboxProjectMeta,
   type SandboxToStudio,
 } from '@platon/bridge/sandbox'
@@ -46,6 +47,11 @@ const props = withDefaults(
      * turns the release into a `drop` at the location the Sandbox last resolved.
      */
     dragging?: boolean
+    /**
+     * In-place changes to rendered blocks (Preview: what the page script set). Whole values, sent
+     * after every init (which resets the tree) and whenever the list changes.
+     */
+    patches?: SandboxPatch[]
     handshakeMs?: number
   }>(),
   { role: null, selected: null, handshakeMs: 8000 },
@@ -58,6 +64,7 @@ const emit = defineEmits<{
   page: [pageId: string]
   role: [role: string | null]
   log: [entry: { level: 'log' | 'info' | 'warn' | 'error'; text: string; src?: string }]
+  'block-event': [e: SandboxToStudio['block-event']]
 }>()
 const { t } = useI18n()
 
@@ -105,7 +112,12 @@ function sendInit() {
       fit: props.fit,
     })
     channel.send('select-block', { blockId: props.selected })
+    sendPatches()
   })
+}
+
+function sendPatches() {
+  for (const patch of props.patches ?? []) channel.send('patch', { patch: plain(patch) })
 }
 
 const off = [
@@ -120,7 +132,9 @@ const off = [
     emit('select', m.blockId)
   }),
   channel.on('block-hover', (m) => emit('hover', m.blockId)),
-  channel.on('block-rect', (m) => emit('rect', { blockId: m.blockId, rect: m.rect })),
+  channel.on('block-rect', (m) =>
+    emit('rect', { blockId: m.blockId, rect: m.rect, ...(m.grid ? { grid: m.grid } : {}) }),
+  ),
   channel.on('drop-target', (m) => {
     target.value = m
     awaiting?.(m)
@@ -133,6 +147,9 @@ const off = [
     target.value = null
     emit('drop', m)
   }),
+  channel.on('block-event', (m) =>
+    emit('block-event', { blockId: m.blockId, event: m.event, payload: m.payload }),
+  ),
   channel.on('content-size', (m) => (height.value = m.height)),
   channel.on('page-changed', (m) => m.pageId !== props.pageId && emit('page', m.pageId)),
   channel.on('role-changed', (m) => m.role !== props.role && emit('role', m.role)),
@@ -180,6 +197,10 @@ function fmt(v: unknown): string {
 // switch mode without a full re-init) is intentionally unused here — there is no in-place toggle.
 watch(() => [props.meta, props.mode, props.data, props.fit], sendInit)
 watch(
+  () => props.patches,
+  () => phase.value === 'ready' && !queued && sendPatches(),
+)
+watch(
   () => props.pageId,
   (pageId) => pageId && phase.value === 'ready' && channel.send('navigate', { pageId }),
 )
@@ -193,9 +214,14 @@ watch(
 )
 
 // ── drags started in the Studio ────────────────────────────────────────────
-/** Pointer in the iframe's own CSS pixels; the canvas may be zoomed around it. */
+/**
+ * Pointer in the iframe's own CSS pixels; the canvas may be zoomed around it. Measured on the
+ * iframe, not the catcher: the palette ends the drag before the catcher hears the drop, and Vue has
+ * removed the catcher by then (microtasks run between listeners), so it would measure as empty.
+ */
 function framePoint(e: DragEvent) {
-  const el = e.currentTarget as HTMLElement
+  const el = frame.value
+  if (!el) return { x: e.clientX, y: e.clientY }
   const r = el.getBoundingClientRect()
   const scale = r.width ? el.offsetWidth / r.width : 1
   return { x: (e.clientX - r.left) * scale, y: (e.clientY - r.top) * scale }

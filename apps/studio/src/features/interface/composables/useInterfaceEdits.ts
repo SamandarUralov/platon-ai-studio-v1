@@ -4,6 +4,7 @@
  */
 import { useI18n } from 'vue-i18n'
 import {
+  applySpans,
   BLOCKS,
   canPlaceIn,
   cellOf,
@@ -11,6 +12,8 @@ import {
   getAt,
   newId,
   placeBlock,
+  resizeInRow,
+  rowOf,
   uniqueName,
   type Block,
   type Cell,
@@ -81,6 +84,25 @@ export function useInterfaceEdits() {
     )
   }
 
+  /**
+   * Give block `id` `span` of its row's 12 columns; neighbours that no longer fit go back to auto.
+   * `undefined` makes the block itself auto again.
+   */
+  function resizeBlock(page: Page, id: string, span: number | undefined) {
+    const b = page.blocks.find((x) => x.id === id)
+    if (!b) return false
+    const spans =
+      span === undefined ? new Map([[id, undefined]]) : resizeInRow(rowOf(page.blocks, id), id, span)
+    const next = applySpans(page.blocks, spans)
+    if (next.every((x, i) => x === page.blocks[i])) return false
+    return setBlocks(
+      page,
+      next,
+      t('interface.change.resizeBlock', { block: title(b), page: page.name }),
+      `interface.pages.${page.id}.blocks.${id}.span`,
+    )
+  }
+
   /** Copy a block below its row; a container is copied with everything inside it. */
   function duplicateBlock(page: Page, block: Block) {
     const refs = page.blocks.map((b) => b.ref)
@@ -92,7 +114,9 @@ export function useInterfaceEdits() {
       refs.push(ref)
       return { ...structuredClone(b), id, ref }
     }
-    const copy = clone(block)
+    // The copy gets a row of its own, where the original's width (sized against its neighbours)
+    // would leave it oddly narrow.
+    const { span: _span, ...copy } = clone(block)
     const inner = page.blocks
       .filter((b) => descendantIds(page.blocks, block.id).has(b.id))
       .map((b) => clone(b))
@@ -250,6 +274,7 @@ export function useInterfaceEdits() {
     setBlocks,
     addBlock,
     moveBlock,
+    resizeBlock,
     duplicateBlock,
     deleteBlock,
     pageField,

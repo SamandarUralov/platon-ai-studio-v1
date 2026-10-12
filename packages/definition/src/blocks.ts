@@ -208,6 +208,18 @@ export function applySpans(blocks: Block[], spans: Map<string, number | undefine
   })
 }
 
+function withoutSpan(b: Block): Block {
+  if (b.span === undefined) return b
+  const { span: _s, ...rest } = b
+  return rest
+}
+
+/** Columns block `id` takes in its row right now (12 when it is not on the page). */
+export function spanOf(blocks: Block[], id: string): number {
+  const row = rowOf(blocks, id)
+  return rowSpans(row)[row.findIndex((b) => b.id === id)] ?? GRID_COLUMNS
+}
+
 /** The row (in its cell) that block `id` sits in. */
 export function rowOf(blocks: Block[], id: string): Block[] {
   const b = blocks.find((x) => x.id === id)
@@ -231,7 +243,12 @@ export function placeBlock(
   const rest = blocks.filter((b) => b.id !== block.id)
   const target = targetId ? rest.find((b) => b.id === targetId) : undefined
   const at = target ? cellOf(target) : cell
-  const placed = withCell(block, at)
+  const from = blocks.find((b) => b.id === block.id)
+  // A width only means something next to the blocks it was sized against: a block reordered inside
+  // its row keeps its span, one that lands in another row takes an auto share there.
+  const sameRow =
+    !!from && !!target && (side === 'left' || side === 'right') && inCell(from, at) && from.row === target.row
+  const placed = withCell(from && !sameRow ? withoutSpan(block) : block, at)
   const rows = toRows(rest.filter((b) => inCell(b, at)))
   const r = target ? rows.findIndex((row) => row.some((b) => b.id === target.id)) : -1
   if (r < 0) rows.push([placed])

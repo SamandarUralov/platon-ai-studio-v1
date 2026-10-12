@@ -57,6 +57,35 @@ describe('toSandboxMeta', () => {
     expect(find('box')!.children!.map((c) => c.id)).toEqual(['y'])
   })
 
+  it('lays rows out on the 12-column grid', () => {
+    expect(tree[1]).toMatchObject({ component: 'row', props: { columns: 12 } })
+    // Blocks without a width of their own are `auto`: they may take a role-hidden neighbour's room.
+    expect(tree[1]!.children!.map((c) => c.layout)).toEqual([
+      { colSpan: 6, auto: true },
+      { colSpan: 6, auto: true },
+    ])
+    const grid: Page = {
+      ...page,
+      id: 'grid',
+      route: '/grid',
+      blocks: [
+        blk('w', 'text', 0, { span: 8 }),
+        blk('n', 'text', 0),
+        blk('solo', 'text', 1, { span: 6 }),
+        blk('full', 'text', 2),
+      ],
+    }
+    const def = lab()
+    const built = toSandboxMeta({ ...def, interface: { ...def.interface, pages: [grid] } })
+    const t = built.meta.pages[0]!.blocks
+    expect(t[0]!.children!.map((c) => c.layout)).toEqual([{ colSpan: 8 }, { colSpan: 4, auto: true }])
+    // A lone block narrower than the row still needs the grid around it.
+    expect(t[1]).toMatchObject({ component: 'row', props: { columns: 12 } })
+    expect(t[1]!.children!.map((c) => [c.id, c.layout])).toEqual([['solo', { colSpan: 6 }]])
+    expect(t[2]).toMatchObject({ id: 'full', component: 'text' })
+    expect(t[2]!.layout).toBeUndefined()
+  })
+
   it('maps block props onto Sandbox components', () => {
     expect(find('head')).toMatchObject({ component: 'page_header', props: { title: 'Lab' } })
     expect(find('x')).toMatchObject({ component: 'button', props: { label: 'Go' } })

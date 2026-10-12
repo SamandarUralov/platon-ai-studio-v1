@@ -8,6 +8,7 @@ import { cellBlocks, toRows, type Block } from '@platon/definition'
 import type { RenderContext } from './context'
 import { canSeeBlock } from './visibility'
 import { GAP_CLASS } from './blocks/props'
+import { rowGridClasses } from './grid'
 import BlockView from './BlockView.vue'
 
 const props = withDefaults(
@@ -34,21 +35,29 @@ const visible = computed(() =>
       canSeeBlock(props.ctx.definition, b, props.ctx.viewer, props.ctx.lang),
   ),
 )
-// Side-by-side containers put every child in one wrapping row.
+// Side-by-side containers put every child in one wrapping row; other cells lay each row out on the
+// 12-column grid.
+const sideBySide = computed(() => props.direction === 'row')
 const rows = computed(() =>
-  (props.direction === 'row' ? [visible.value] : toRows(visible.value)).filter((r) => r.length),
+  (sideBySide.value ? [visible.value] : toRows(visible.value))
+    .filter((r) => r.length)
+    .map((r) => ({ blocks: r, cols: sideBySide.value ? [] : rowGridClasses(r) })),
 )
 </script>
 
 <template>
-  <div v-if="rows.length" class="flex flex-col" :class="GAP_CLASS[gap] ?? 'gap-5'">
-    <div v-for="(row, i) in rows" :key="i" class="flex flex-wrap" :class="GAP_CLASS[gap] ?? 'gap-4'">
+  <div v-if="rows.length" class="@container flex flex-col" :class="GAP_CLASS[gap] ?? 'gap-5'">
+    <div
+      v-for="(row, i) in rows"
+      :key="i"
+      :class="[sideBySide ? 'flex flex-wrap' : 'grid grid-cols-12', GAP_CLASS[gap] ?? 'gap-4']"
+    >
       <BlockView
-        v-for="b in row"
+        v-for="(b, j) in row.blocks"
         :key="b.id"
         :block="b"
         :ctx="ctx"
-        class="min-w-[min(100%,240px)] flex-1"
+        :class="sideBySide ? 'min-w-[min(100%,240px)] flex-1' : ['min-w-0', row.cols[j]]"
         @event="(n, a) => emit('event', b, n, a)"
       >
         <template #custom="s"><slot name="custom" v-bind="s" /></template>

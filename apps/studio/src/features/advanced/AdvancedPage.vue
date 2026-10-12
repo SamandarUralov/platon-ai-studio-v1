@@ -1,14 +1,26 @@
 <script setup lang="ts">
 /**
- * Advanced · App definition (requirements §3.8): a read-only, live JSON view of the same definition
- * the visual editors and Studio AI change. Tree on the left, selected node on the right.
+ * Advanced · App definition (requirements §3.8): a live JSON view of the same definition the visual
+ * editors and Studio AI change. Tree on the left, selected node on the right. A whole page can also
+ * be edited as JSON (PageJsonEditor); everything else stays read-only.
  */
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Check, ChevronRight, Code, Copy, Info, Link2, PencilRuler, Search, SearchX } from 'lucide-vue-next'
+import {
+  Check,
+  ChevronRight,
+  Code,
+  Copy,
+  FileJson,
+  Info,
+  Link2,
+  PencilRuler,
+  Search,
+  SearchX,
+} from 'lucide-vue-next'
 import { PButton, PEmptyState, PIcon, PInput, PTree, toast } from '@platon/ui'
-import { getAt } from '@platon/definition'
+import { getAt, type Page } from '@platon/definition'
 import LayerShell from '@/components/shell/LayerShell.vue'
 import PanelHeader from '@/components/shell/PanelHeader.vue'
 import { useDefinitionStore } from '@/stores/definition'
@@ -16,6 +28,8 @@ import { useProjectId } from '@/composables/useProject'
 import { buildDefinitionTree, filterTree, trail, type DefNode } from './definitionTree'
 import { linkForPointer } from '@/composables/definitionLinks'
 import JsonLines from './JsonLines.vue'
+import PageJsonEditor from './PageJsonEditor.vue'
+import { pageIdOf } from './pageJson'
 import HideLeftPanel from '@/components/shell/HideLeftPanel.vue'
 
 const { t } = useI18n()
@@ -43,6 +57,14 @@ const value = computed(() => (def.definition ? getAt(def.definition, selected.va
 const target = computed(() =>
   node.value && !node.value.section ? linkForPointer(projectId.value, selected.value, def.definition) : null,
 )
+
+/** The selected node when it is a whole page: only pages can be edited here. */
+const editablePage = computed<Page | null>(() => {
+  const id = pageIdOf(selected.value)
+  return (id && def.definition?.interface.pages.find((p) => p.id === id)) || null
+})
+const editing = ref(false)
+watch(selected, () => (editing.value = false))
 
 function select(n: DefNode | string) {
   const id = typeof n === 'string' ? n : n.id
@@ -173,6 +195,9 @@ const total = (s: DefNode) => s.children?.reduce((a, c) => a + (c.children?.leng
             >
               {{ copied === 'json' ? t('advanced.copied') : t('advanced.copyJson') }}
             </PButton>
+            <PButton v-if="editablePage && !editing" :icon="FileJson" @click="editing = true">{{
+              t('advanced.edit.open')
+            }}</PButton>
             <PButton v-if="target" variant="ink" :icon="PencilRuler" @click="router.push(target.to)">{{
               t('advanced.openVisual', { layer: target.layer })
             }}</PButton>
@@ -183,11 +208,22 @@ const total = (s: DefNode) => s.children?.reduce((a, c) => a + (c.children?.leng
           class="mt-4 flex items-start gap-2.5 rounded-[10px] border border-warn/30 bg-warn-bg px-3.5 py-2.5 text-sm leading-relaxed text-warn"
         >
           <Info :size="14" class="mt-0.5 shrink-0" />
-          <span>{{ t('advanced.banner') }}</span>
+          <span>{{ editing ? t('advanced.edit.banner') : t('advanced.banner') }}</span>
         </div>
 
         <div class="mt-4">
-          <JsonLines v-if="value !== undefined" :value="value" :base="selected" @copy-pointer="copyPointer" />
+          <PageJsonEditor
+            v-if="editing && editablePage"
+            :key="editablePage.id"
+            :page="editablePage"
+            @close="editing = false"
+          />
+          <JsonLines
+            v-else-if="value !== undefined"
+            :value="value"
+            :base="selected"
+            @copy-pointer="copyPointer"
+          />
           <PEmptyState
             v-else
             :icon="Code"

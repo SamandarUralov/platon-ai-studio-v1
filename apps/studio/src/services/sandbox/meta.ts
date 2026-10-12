@@ -11,8 +11,10 @@
  */
 import {
   cellBlocks,
+  GRID_COLUMNS,
   isContainer,
   listProp,
+  rowSpans,
   slotLabels,
   toRows,
   type AppDefinition,
@@ -54,6 +56,8 @@ export interface SandboxMetaOptions {
   /** Viewer name for "assigned to me" counters. */
   viewer?: string
   today?: string
+  /** Send page lifecycle code (default). Preview runs it in the Studio's page runtime instead. */
+  lifecycle?: boolean
 }
 
 /** Studio's empty role list means "nobody"; the Sandbox treats [] as everyone. */
@@ -72,10 +76,23 @@ export function toSandboxMeta(def: AppDefinition, o: SandboxMetaOptions = {}): S
     const blocks = cellBlocks(page.blocks, cell.parent, cell.slot ?? 0, slotCount)
     const rows = row ? (blocks.length ? [blocks] : []) : toRows(blocks)
     const out = rows.map((r, i) => {
-      if (r.length === 1 && !row) return block(page, r[0]!)
+      // Rows sit on the 12-column grid; a lone block keeps the full width unless it was narrowed.
+      const spans = row ? [] : rowSpans(r)
+      if (r.length === 1 && !row && spans[0] === GRID_COLUMNS) return block(page, r[0]!)
       const id = `${key}${SEP}r${i}`
       nodes.set(id, { kind: 'row', cell, children: r.map((b) => b.id) })
-      return { id, component: 'row', props: { gap: 16, wrap: true }, children: r.map((b) => block(page, b)) }
+      // `auto` blocks (no width of their own) may grow into the room of a role-hidden neighbour,
+      // as the renderer re-shares a row among the blocks the viewer can see.
+      const children = r.map((b, j) =>
+        row
+          ? block(page, b)
+          : {
+              ...block(page, b),
+              layout: { colSpan: spans[j]!, ...(b.span === undefined ? { auto: true } : {}) },
+            },
+      )
+      const props = row ? { gap: 16, wrap: true } : { gap: 16, columns: GRID_COLUMNS }
+      return { id, component: 'row', props, children }
     })
     nodes.set(key, { kind: 'cell', cell, children: out.map((n) => n.id) })
     return out
@@ -170,7 +187,14 @@ export function toSandboxMeta(def: AppDefinition, o: SandboxMetaOptions = {}): S
     ) => ({
       id: b.id,
       component,
-      props: Object.fromEntries(Object.entries(props).filter(([, v]) => v !== undefined)),
+      // What a page script set at runtime (see overrides.ts) reaches every block, mapped or not.
+      props: Object.fromEntries(
+        Object.entries({
+          ...props,
+          disabled: p.disabled === true ? true : undefined,
+          rows: Array.isArray(p.rows) ? p.rows : undefined,
+        }).filter(([, v]) => v !== undefined),
+      ),
       ...extra,
     })
 
@@ -274,7 +298,7 @@ export function toSandboxMeta(def: AppDefinition, o: SandboxMetaOptions = {}): S
       parent: page.parent ?? null,
       in_menu: page.inMenu,
       ...(page.visibleTo?.length ? { visible_to: page.visibleTo } : {}),
-      ...(page.lifecycle ? { lifecycle: lifecycle(page) } : {}),
+      ...(page.lifecycle && o.lifecycle !== false ? { lifecycle: lifecycle(page) } : {}),
       blocks,
     }
   })

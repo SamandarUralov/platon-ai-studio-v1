@@ -4,6 +4,7 @@ import {
   BLOCKS,
   camel,
   cellBlocks,
+  GRID_COLUMNS,
   slotLabels,
   toRows,
   newId,
@@ -260,4 +261,43 @@ export function moveTarget(
 export function moveAbility(blocks: Block[], id: string): Record<MoveDir, boolean> {
   const can = (d: MoveDir) => !!moveTarget(blocks, id, d)
   return { up: can('up'), down: can('down'), left: can('left'), right: can('right') }
+}
+
+/** Gap between blocks of a row on the canvas (the Sandbox adapter sends rows with this gap). */
+export const ROW_GAP = 16
+
+/**
+ * Columns a block of `width` px spanning `span` columns takes after its right edge moves `dx` px,
+ * rounded to the nearest whole column. The column width comes from the block itself, so this
+ * needs no measurement of the row.
+ */
+export function spanFromDrag(width: number, span: number, dx: number, gap = ROW_GAP): number {
+  const col = (width - (span - 1) * gap) / span
+  const n = Math.round((width + dx + gap) / (col + gap))
+  return Math.min(GRID_COLUMNS, Math.max(1, n))
+}
+
+/** Blocks sit on the 12-column grid unless a side-by-side container (`direction: row`) holds them. */
+export function canResize(blocks: Block[], id: string): boolean {
+  const b = blocks.find((x) => x.id === id)
+  if (!b) return false
+  const parent = b.parent ? blocks.find((x) => x.id === b.parent) : undefined
+  return (parent?.props as Record<string, unknown> | undefined)?.direction !== 'row'
+}
+
+/** Row width below which the Sandbox stacks a 12-column row (its RowContainer). */
+export const GRID_STACK_BELOW = 560
+
+/**
+ * Whether the resize handle makes sense for the selected block. Sizes only show on an unstacked
+ * row: on a stacked one every block is full width, so a drag would preview nothing real. A lone
+ * full-width block is sent without a row around it; then its own width is the row's.
+ */
+export function handleShown(
+  rect: { width: number },
+  grid: { width: number; stacked: boolean } | undefined,
+  rowLength: number,
+): boolean {
+  if (grid) return !grid.stacked
+  return rowLength === 1 && rect.width >= GRID_STACK_BELOW
 }

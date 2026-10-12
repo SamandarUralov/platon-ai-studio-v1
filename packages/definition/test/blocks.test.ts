@@ -13,6 +13,7 @@ import {
   resizeInRow,
   applySpans,
   rowOf,
+  spanOf,
 } from '../src/blocks'
 import type { Block } from '../src/generated/app-definition'
 
@@ -169,5 +170,28 @@ describe('12-column rows', () => {
     )
     expect(next[1]!.span).toBe(4)
     expect('span' in next[2]!).toBe(false)
+  })
+
+  it('keeps a moved block width only while it stays in its row', () => {
+    const blocks = [b('a', 8), b('b'), { ...b('c'), row: 1 }]
+    // Reordered inside its row: the width goes along.
+    const swapped = placeBlock(blocks, blocks[0]!, 'b', 'right')
+    expect(swapped.map((x) => [x.id, x.span])).toEqual([
+      ['b', undefined],
+      ['a', 8],
+      ['c', undefined],
+    ])
+    // Into another row, or a row of its own: it takes an auto share there.
+    expect(placeBlock(blocks, blocks[0]!, 'c', 'left').find((x) => x.id === 'a')).not.toHaveProperty('span')
+    expect(placeBlock(blocks, blocks[0]!, 'c', 'after').find((x) => x.id === 'a')).not.toHaveProperty('span')
+    // A new block keeps the span it was created with.
+    expect(placeBlock(blocks, b('n', 4), 'c', 'left').find((x) => x.id === 'n')!.span).toBe(4)
+  })
+
+  it('reads the columns a block takes now', () => {
+    const blocks = [b('a', 8), b('b'), { ...b('c'), row: 1 }]
+    expect([spanOf(blocks, 'a'), spanOf(blocks, 'b'), spanOf(blocks, 'c'), spanOf(blocks, 'x')]).toEqual([
+      8, 4, 12, 12,
+    ])
   })
 })

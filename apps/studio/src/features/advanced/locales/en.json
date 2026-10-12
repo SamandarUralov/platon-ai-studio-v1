@@ -1,6 +1,6 @@
 {
   "title": "App definition",
-  "sub": "Read-only · updates live",
+  "sub": "Updates live · pages can be edited as JSON",
   "search": "Search pages, functions, tables…",
   "noMatch": "Nothing matches",
   "noMatchHint": "Try a page, function, table or a JSON pointer like /data/tables.",
@@ -11,10 +11,39 @@
   "copied": "Copied",
   "copyFailed": "Couldn’t copy to the clipboard",
   "openVisual": "Open in {layer}",
-  "banner": "Advanced view of the same definition the visual editors and Studio AI change. It updates live and can’t be edited here. Records, files and run history are never part of it.",
+  "banner": "Advanced view of the same definition the visual editors and Studio AI change. It updates live; a whole page can be edited as JSON, everything else is read-only here. Records, files and run history are never part of it.",
   "missing": "This item no longer exists",
   "missingHint": "It was renamed or deleted since you opened it.",
   "backToPages": "Back to pages",
   "truncated": "Showing the first {n} lines. Select a smaller item in the tree to see all of it.",
-  "clickToCopy": "click to copy pointer"
+  "clickToCopy": "click to copy pointer",
+  "edit": {
+    "open": "Edit page JSON",
+    "label": "JSON of the {page} page",
+    "apply": "Apply",
+    "format": "Format",
+    "reset": "Reset",
+    "cancel": "Cancel",
+    "hint": "Applied edits are unsaved until you save, like any other change.",
+    "banner": "You are editing this page as JSON. Apply checks it first; the page id must stay the same.",
+    "change": "Edited the “{page}” page as JSON",
+    "applied": "“{page}” updated",
+    "issues": "Can’t apply: {n} problem(s)",
+    "issue": {
+      "json": "Not valid JSON: {message}",
+      "notObject": "The page must be a JSON object.",
+      "idChanged": "The page id must stay “{id}”.",
+      "schema": "{path}: {message}",
+      "dupId": "Two blocks share the id “{id}”.",
+      "dupRef": "Two blocks share the ref “{ref}”.",
+      "noParent": "Block “{block}” points at “{parent}”, which isn’t on this page.",
+      "notContainer": "Block “{block}” sits in “{parent}”, but a {type} can’t hold blocks.",
+      "slot": "Block “{block}” uses slot {slot}, but its container has {count} cell(s).",
+      "cycle": "Block “{block}” ends up inside itself.",
+      "noTable": "Block “{block}” reads table “{table}”, which doesn’t exist.",
+      "noField": "Block “{block}” shows field “{field}”, which table “{table}” doesn’t have.",
+      "noRole": "Role “{role}” doesn’t exist.",
+      "routeTaken": "Route {route} is already used by “{page}”."
+    }
+  }
 }

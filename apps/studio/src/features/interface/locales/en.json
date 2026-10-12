@@ -84,6 +84,8 @@
     "duplicate": "Duplicate (⌘D)",
     "delete": "Delete (⌫)",
     "move": { "up": "Move up", "down": "Move down", "left": "Move left", "right": "Move right" },
+    "resize": "Resize on the 12-column grid (← →)",
+    "columns": "{n} / 12 columns",
     "drop": {
       "before": "New row above",
       "after": "New row below",
@@ -295,6 +297,12 @@
     "borderChanged": "Changed border",
     "shadowChanged": "Changed shadow",
     "widthChanged": "Changed width",
+    "columns": {
+      "label": "Grid columns",
+      "hint": "Share of its row on the 12-column grid",
+      "auto": "Auto ({n})",
+      "n": "{n} / 12"
+    },
     "fontChanged": "Changed font size",
     "alignChanged": "Changed alignment",
     "reset": "Reset to default style",
@@ -381,6 +389,7 @@
     "blockField": "{label} on “{block}”",
     "addBlock": "Added “{block}” to {page}",
     "moveBlock": "Moved “{block}” on {page}",
+    "resizeBlock": "Resized “{block}” on {page}",
     "deleteBlock": "Deleted “{block}” from {page}",
     "addPage": "Added page “{page}”",
     "deletePage": "Deleted page “{page}”",

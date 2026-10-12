@@ -3,7 +3,17 @@ import { applyPatch, type AppDefinition, type Block, type Page } from '@platon/d
 import { fieldopsDefinition, ORDERS_CODE } from '../../../../../../mocks/src/seed'
 import { ctxTypings, defaultScript, ensureHandler, parseOutline, signature } from '../lib/script'
 import { blockPath, setOps } from '../lib/patch'
-import { createBlock, layerTree, moveAbility, moveTarget, paletteGroups, rowLabelOf } from '../lib/blocks'
+import {
+  canResize,
+  createBlock,
+  handleShown,
+  layerTree,
+  moveAbility,
+  moveTarget,
+  paletteGroups,
+  rowLabelOf,
+  spanFromDrag,
+} from '../lib/blocks'
 import { fitZoom, stepZoom } from '../lib/viewport'
 
 const def: AppDefinition = fieldopsDefinition()
@@ -183,5 +193,55 @@ describe('block toolbar moves', () => {
     expect(moveAbility(blocks, 'x')).toEqual({ up: false, down: true, left: false, right: false })
     expect(moveTarget(blocks, 'y', 'up')).toEqual({ target: 'x', side: 'before' })
     expect(moveAbility(blocks, 'cols')).toMatchObject({ up: true, down: false })
+  })
+})
+
+describe('12-column resize', () => {
+  const b = (id: string, row: number, extra: Partial<Block> = {}): Block => ({
+    id,
+    type: 'text',
+    ref: id,
+    row,
+    props: {},
+    ...extra,
+  })
+
+  it('snaps a dragged edge to whole columns', () => {
+    // 1200px row, 16px gaps: a column is 86.67px, a 6-column block is 592px.
+    expect(spanFromDrag(592, 6, 0)).toBe(6)
+    expect(spanFromDrag(592, 6, 40)).toBe(6)
+    expect(spanFromDrag(592, 6, 60)).toBe(7)
+    expect(spanFromDrag(592, 6, -250)).toBe(4)
+    expect(spanFromDrag(592, 6, 5000)).toBe(12)
+    expect(spanFromDrag(592, 6, -5000)).toBe(1)
+  })
+
+  it('resizes blocks on the grid, not inside side-by-side containers', () => {
+    const blocks = [
+      b('a', 0),
+      b('stack', 1, { type: 'container', props: { direction: 'row' } }),
+      b('in', 0, { parent: 'stack' }),
+      b('box', 2, { type: 'container', props: { direction: 'column' } }),
+      b('cell', 0, { parent: 'box' }),
+    ]
+    expect(['a', 'stack', 'in', 'cell', 'nope'].map((id) => canResize(blocks, id))).toEqual([
+      true,
+      true,
+      false,
+      true,
+      false,
+    ])
+  })
+
+  it('shows the handle only where the grid is not stacked', () => {
+    const rect = { x: 0, y: 0, width: 400, height: 50 }
+    // The Sandbox measured the row.
+    expect(handleShown(rect, { width: 900, stacked: false }, 2)).toBe(true)
+    expect(handleShown(rect, { width: 400, stacked: true }, 2)).toBe(false)
+    // A lone full-width block has no grid row around it: the block is the row.
+    expect(handleShown({ ...rect, width: 900 }, undefined, 1)).toBe(true)
+    expect(handleShown(rect, undefined, 1)).toBe(false)
+    // An older Sandbox that does not report the row.
+    expect(handleShown(rect, undefined, 2)).toBe(false)
   })
 })

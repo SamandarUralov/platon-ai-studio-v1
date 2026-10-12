@@ -9,6 +9,9 @@ export const SANDBOX_CHANNEL = 'platon-sandbox' as const
 
 export type Rect = { x: number; y: number; width: number; height: number }
 
+/** One in-place change to a rendered block: `path` is a dot path inside it (e.g. `props`). */
+export type SandboxPatch = { blockId: string; path: string; value: unknown }
+
 /** Messages the Studio sends, by type. */
 export interface StudioToSandbox {
   init: {
@@ -22,6 +25,8 @@ export interface StudioToSandbox {
   'set-mode': { mode: SandboxMode }
   'set-role': { role: string | null }
   'select-block': { blockId: string | null }
+  /** Change a rendered block without a re-init (Preview: what the page script set). */
+  patch: { patch: SandboxPatch }
   navigate: { pageId: string }
   'drag-over': { point: { x: number; y: number }; draggable?: { component?: string; blockId?: string } }
   'drag-end': Record<string, never>
@@ -33,7 +38,14 @@ export interface SandboxToStudio {
   'block-selected': { blockId: string | null }
   'block-hover': { blockId: string | null }
   /** Viewport rect of the selected block, re-sent when the layout moves it. */
-  'block-rect': { blockId: string | null; rect: Rect | null }
+  'block-rect': {
+    blockId: string | null
+    rect: Rect | null
+    /** The 12-column row the block sits in, when it sits in one; `stacked` below 560px. */
+    grid?: { width: number; stacked: boolean }
+  }
+  /** Preview: a block emitted an event; `event` is the component's own name, `payload` plain data. */
+  'block-event': { blockId: string; event: string; payload?: unknown }
   'drop-target': { parentId: string | null; index: number; rect?: Rect; parentRect?: Rect }
   'drop-clear': Record<string, never>
   drop: { parentId: string | null; index: number; source?: { blockId?: string } }

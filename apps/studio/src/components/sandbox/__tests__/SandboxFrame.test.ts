@@ -103,12 +103,21 @@ describe('SandboxFrame', () => {
     send({ type: 'block-selected', blockId: 'b2' })
     send({ type: 'block-hover', blockId: 'b3' })
     send({ type: 'block-rect', blockId: 'b2', rect: { x: 1, y: 2, width: 3, height: 4 } })
+    send({
+      type: 'block-rect',
+      blockId: 'b3',
+      rect: { x: 1, y: 2, width: 3, height: 4 },
+      grid: { width: 900, stacked: false },
+    })
     send({ type: 'drop', parentId: null, index: 2 })
     send({ type: 'console', level: 'warn', args: ['careful', { n: 1 }] })
     await flushPromises()
     expect(w.emitted('select')?.[0]).toEqual(['b2'])
     expect(w.emitted('hover')?.[0]).toEqual(['b3'])
     expect(w.emitted('rect')?.[0]).toEqual([{ blockId: 'b2', rect: { x: 1, y: 2, width: 3, height: 4 } }])
+    expect(w.emitted('rect')?.[1]).toEqual([
+      { blockId: 'b3', rect: { x: 1, y: 2, width: 3, height: 4 }, grid: { width: 900, stacked: false } },
+    ])
     expect(w.emitted('drop')?.[0]).toEqual([{ type: 'drop', parentId: null, index: 2 }])
     expect(w.emitted('log')?.[0]).toEqual([{ level: 'warn', text: 'careful {"n":1}' }])
     w.unmount()
@@ -129,6 +138,56 @@ describe('SandboxFrame', () => {
     send({ type: 'drop-target', parentId: 'cell~1', index: 0 })
     await flushPromises()
     expect(w.emitted('drop')?.[0]).toEqual([{ parentId: 'cell~1', index: 0 }])
+    w.unmount()
+  })
+
+  it('maps the release point through the iframe even when the drag catcher is already gone', async () => {
+    const { w, post, send } = await setup()
+    send({ type: 'ready', protocolVersion: 1 })
+    await flushPromises()
+    // The canvas is zoomed to 50% and offset: 500 screen px show the iframe's 1000 CSS px.
+    const iframe = w.find('iframe').element as HTMLIFrameElement
+    iframe.getBoundingClientRect = () => ({ left: 100, top: 50, width: 500, height: 400 }) as DOMRect
+    Object.defineProperty(iframe, 'offsetWidth', { value: 1000 })
+    await w.setProps({ dragging: true })
+    const catcher = w.find('.absolute.inset-0.z-10')
+    post.mockClear()
+
+    // The palette ends the drag before the catcher hears the drop, so the catcher measures as
+    // detached (an empty rect); the point must still come out in iframe pixels.
+    await catcher.trigger('drop', { clientX: 150, clientY: 70 })
+    const over = post.mock.calls.map((c) => (c[0] as { payload: { type: string } }).payload)
+    expect(over[0]).toEqual({ type: 'drag-over', point: { x: 100, y: 40 } })
+    w.unmount()
+  })
+
+  it('sends the page script patches after every init and when they change', async () => {
+    const save = { blockId: 'save', path: 'props', value: { label: 'Save', disabled: true } }
+    const { w, post, send } = await setup({ mode: 'preview', patches: [save] })
+    const types = () => post.mock.calls.map((c) => (c[0] as { payload: { type: string } }).payload)
+    send({ type: 'ready', protocolVersion: 1 })
+    await flushPromises()
+    const sent = types()
+    expect(sent.map((m) => m.type)).toEqual(['init', 'select-block', 'patch'])
+    expect(sent[2]).toEqual({ type: 'patch', patch: save })
+
+    post.mockClear()
+    const hide = { blockId: 'note', path: 'visible_to', value: ['~nobody'] }
+    await w.setProps({ patches: [save, hide] })
+    await flushPromises()
+    expect(types()).toEqual([
+      { type: 'patch', patch: save },
+      { type: 'patch', patch: hide },
+    ])
+    w.unmount()
+  })
+
+  it('relays block events', async () => {
+    const { w, send } = await setup({ mode: 'preview' })
+    send({ type: 'ready', protocolVersion: 1 })
+    send({ type: 'block-event', blockId: 'save', event: 'click' })
+    await flushPromises()
+    expect(w.emitted('block-event')?.[0]).toEqual([{ blockId: 'save', event: 'click' }])
     w.unmount()
   })
 

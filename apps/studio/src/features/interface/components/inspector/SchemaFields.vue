@@ -37,7 +37,8 @@ function set(f: PropField, value: unknown) {
   )
 }
 function commit(f: PropField) {
-  const raw = buf.value[f.key] ?? ''
+  // A number input's v-model hands back a number, not the string the buffer started with.
+  const raw = String(buf.value[f.key] ?? '')
   if (f.input === 'list') return set(f, raw.trim() ? listProp(raw) : undefined)
   if (f.input !== 'number') return set(f, raw)
   if (raw.trim() === '') return set(f, undefined)

@@ -1,12 +1,16 @@
 <script setup lang="ts">
-/** Block style: radius, colours, spacing, border, shadow, width, alignment and font size. */
+/**
+ * Block style: radius, colours, spacing, border, shadow, width, alignment and font size, plus the
+ * block's share of its row on the 12-column grid.
+ */
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { AlignCenter, AlignLeft, AlignRight, RotateCcw } from 'lucide-vue-next'
 import { PButton, PField, PSegmented, PSelect } from '@platon/ui'
-import type { Block, BlockStyle, Page } from '@platon/definition'
+import { GRID_COLUMNS, spanOf, type Block, type BlockStyle, type Page } from '@platon/definition'
 import { DEFAULT_STYLE } from '@platon/renderer'
 import { useInterfaceEdits } from '../../composables/useInterfaceEdits'
+import { canResize } from '../../lib/blocks'
 
 const props = defineProps<{ page: Page; block: Block }>()
 const { t } = useI18n()
@@ -29,6 +33,32 @@ const aligns = computed(() => [
   { value: 'center' as const, icon: AlignCenter, title: t('interface.style.align.center') },
   { value: 'right' as const, icon: AlignRight, title: t('interface.style.align.right') },
 ])
+const onGrid = computed(() => canResize(props.page.blocks, props.block.id))
+const spanOpts = computed(() => [
+  {
+    value: 'auto',
+    label: t('interface.style.columns.auto', {
+      n: spanOf(
+        props.page.blocks.map((b) => (b.id === props.block.id ? { ...b, span: undefined } : b)),
+        props.block.id,
+      ),
+    }),
+  },
+  ...Array.from({ length: GRID_COLUMNS }, (_, i) => ({
+    value: String(i + 1),
+    label: t('interface.style.columns.n', { n: i + 1 }),
+  })),
+])
+/** A stored width the row could not honour (it overflowed, see rowSpans) shows as auto. */
+const spanValue = computed(() =>
+  props.block.span !== undefined && spanOf(props.page.blocks, props.block.id) === props.block.span
+    ? String(props.block.span)
+    : 'auto',
+)
+function setSpan(v: string) {
+  edits.resizeBlock(props.page, props.block.id, v === 'auto' ? undefined : Number(v))
+}
+
 function reset() {
   edits.blockField(props.page, props.block, ['style'], undefined, t('interface.style.resetDone'))
 }
@@ -153,6 +183,18 @@ function reset() {
         />
       </PField>
     </div>
+    <PField
+      v-if="onGrid"
+      :label="t('interface.style.columns.label')"
+      :hint="t('interface.style.columns.hint')"
+    >
+      <PSelect
+        size="sm"
+        :model-value="spanValue"
+        :options="spanOpts"
+        @update:model-value="(v) => v && setSpan(String(v))"
+      />
+    </PField>
     <PField :label="t('interface.style.align.label')">
       <PSegmented
         :model-value="s.align"
